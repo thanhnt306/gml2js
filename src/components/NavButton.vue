@@ -38,8 +38,7 @@ const props = defineProps({
 const getIconPath = computed(() => {
     // Determine which icon to use
     const iconName = props.active && props.iconActive ? props.iconActive : props.icon
-    // Return absolute path relative to src/assets/images or use dynamic import mechanism if needed suited for Vite
-    // For simplicity in Vite:
-    return `/src/assets/images/${iconName}`
+    // Use URL constructor for Vite to correctly resolve assets in build
+    return new URL(`../assets/images/${iconName}`, import.meta.url).href
 })
 </script>

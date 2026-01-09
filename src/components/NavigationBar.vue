@@ -13,7 +13,7 @@
         @click="isCollapsed = !isCollapsed"
         class="w-6 h-6 flex items-center justify-center rounded hover:bg-white/10"
       >
-        <img :src="isCollapsed ? '/src/assets/images/expand_left_24x24.svg' : '/src/assets/images/expand_24x24.png'" alt="Toggle" />
+        <img :src="isCollapsed ? expandLeft : expandRight" alt="Toggle" />
       </button>
     </div>
 
@@ -65,6 +65,10 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NavButton from './NavButton.vue'
+
+// ... imports
+import expandLeft from '@/assets/images/expand_left_24x24.svg'
+import expandRight from '@/assets/images/expand_24x24.png'
 
 const isCollapsed = ref(false)
 const route = useRoute()
