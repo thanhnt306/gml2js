@@ -29,6 +29,7 @@ const getIconSrc = computed<string>(() => {
     // but here we'll stick to simple logic for the icon source. 
     // Since images are in assets, we resolve them relative to root or public.
     const iconName = props.active ? props.activeIcon : props.icon
-    return `/src/assets/images/${iconName || ''}`
+    if (!iconName) return ''
+    return new URL(`../../assets/images/${iconName}`, import.meta.url).href
 })
 </script>
