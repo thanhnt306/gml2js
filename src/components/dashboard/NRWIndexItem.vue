@@ -59,13 +59,19 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  zoneName: { type: String, default: 'Zone Name' },
-  cumulativePercent: { type: Number, default: 0 },
-  cumulativeDate: { type: String, default: '' },
-  lastUpdatePercent: { type: Number, default: 0 },
-  lastUpdateDate: { type: String, default: '' }
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  zoneName?: string
+  cumulativePercent?: number
+  cumulativeDate?: string
+  lastUpdatePercent?: number
+  lastUpdateDate?: string
+}>(), {
+  zoneName: 'Zone Name',
+  cumulativePercent: 0,
+  cumulativeDate: '',
+  lastUpdatePercent: 0,
+  lastUpdateDate: ''
 })
 
 // Logic from QML:
@@ -74,14 +80,14 @@ const props = defineProps({
 // Percent >= 30: Red (#1AFC6B6D bg, #FC6B6D text)
 // Default Green
 
-const getBgColorClass = (percent) => {
+const getBgColorClass = (percent: number): string => {
     if (percent < 21) return 'bg-[#529B26]/10'
     if (percent >= 21 && percent < 30) return 'bg-[#E2A408]/10'
     if (percent >= 30) return 'bg-[#FC6B6D]/10'
     return 'bg-[#529B26]/10'
 }
 
-const getTextColorClass = (percent) => {
+const getTextColorClass = (percent: number): string => {
     // We can define custom classes in <style> or use arbitrary values
     if (percent < 21) return 'text-nrw-green'
     if (percent >= 21 && percent < 30) return 'text-nrw-yellow'

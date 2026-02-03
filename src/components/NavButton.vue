@@ -24,16 +24,22 @@
   </button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps({
-  label: String,
-  icon: String,
-  iconActive: String,
-  active: Boolean,
-  collapsed: Boolean
-})
+interface Props {
+  label: string
+  icon: string
+  iconActive: string
+  active: boolean
+  collapsed: boolean
+}
+
+const props = defineProps<Props>()
+
+defineEmits<{
+  click: []
+}>()
 
 const getIconPath = computed(() => {
     // Determine which icon to use

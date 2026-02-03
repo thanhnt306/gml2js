@@ -16,7 +16,7 @@
     <!-- Switch State (Sign In <-> Sign Up) -->
     <div class="w-full flex items-center mb-5 h-[30px]" v-if="showSwitchState">
       <span class="text-[#A7A7A7] font-montserrat font-light text-sm mr-1">
-        {{ switchStateText }}
+        {{ switchStatePrompt }}
       </span>
       <button 
         @click="toggleState"
@@ -128,7 +128,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -138,10 +138,20 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // State: 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
-const currentState = ref('signIn')
+type AuthState = 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
+const currentState = ref<AuthState>('signIn')
 const isSubmitting = ref(false)
 
-const form = reactive({
+interface FormData {
+  firstName: string
+  lastName: string
+  email: string
+  username: string
+  password: string
+  licenseKey: string
+}
+
+const form = reactive<FormData>({
   firstName: '',
   lastName: '',
   email: '',
@@ -162,7 +172,7 @@ const stateTitle = computed(() => {
   }
 })
 
-const switchStateText = computed(() => {
+const switchStatePrompt = computed(() => {
   switch (currentState.value) {
     case 'signUp': return 'Already have an account ?'
     case 'signIn': return "Don't have an account ?"
@@ -193,48 +203,41 @@ const submitButtonText = computed(() => {
   }
 })
 
-// Logic
-const toggleState = () => {
-  if (currentState.value === 'signUp') currentState.value = 'signIn'
-  else if (currentState.value === 'signIn') currentState.value = 'signUp'
-  else if (currentState.value === 'activateLicense') currentState.value = 'licenseContact'
+/* Logic */
+const toggleState = (): void => {
+  if (currentState.value === 'signIn') currentState.value = 'signUp'
+  else currentState.value = 'signIn'
 }
 
-const handleSubmit = async () => {
+const handleSubmit = async (): Promise<void> => {
   isSubmitting.value = true
-  
+
   try {
-      if (currentState.value === 'signIn') {
-          const success = await authStore.login(form.username, form.password)
-          if (success) {
-               console.log("Login success")
-               router.push('/app/dashboard')
-          } else {
-              alert("Login failed! (Mock: try admin/admin)")
-          }
-      } 
-      else if (currentState.value === 'signUp') {
-          // Mock Create User
-          // UserManager.createUser(...)
-          console.log("Sign up called", form)
-          // Simulate success, move to license
-          currentState.value = 'activateLicense'
+    if (currentState.value === 'signIn') {
+      const success = await authStore.login(form.username, form.password)
+      if (success) {
+        router.push('/app/dashboard')
+      } else {
+        alert('Invalid credentials')
       }
-      else if (currentState.value === 'activateLicense') {
-           console.log("Activating license", form.licenseKey)
-           // Mock check
-           if (form.licenseKey.length > 0) {
-               // Auto login
-               const success = await authStore.login(form.username, form.password)
-               if (success) router.push('/app/dashboard')
-           } else {
-               alert("Please enter a license key")
-           }
+    } 
+    else if (currentState.value === 'signUp') {
+      // Mock sign up
+      if (UserManager.isAccountExist(form.username)) {
+        alert('Account already exists')
+      } else {
+        alert('Sign up successful! Please sign in.')
+        currentState.value = 'signIn'
       }
-  } catch (e) {
-      console.error(e)
+    }
+    else if (currentState.value === 'activateLicense') {
+      // Mock license activation
+      alert('License activated!')
+    }
+  } catch (error) {
+    console.error('Form submit error:', error)
   } finally {
-      isSubmitting.value = false
+    isSubmitting.value = false
   }
 }
 </script>

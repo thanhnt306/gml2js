@@ -49,21 +49,31 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  zoneName: { type: String, default: 'Zone Name' },
-  existDate: { type: String, default: 'Date' },
-  segments: { type: Array, default: () => [] }
+<script setup lang="ts">
+interface Segment {
+  percent: number
+  color: string
+  label?: string | number
+}
+
+const props = withDefaults(defineProps<{
+  zoneName?: string
+  existDate?: string
+  segments?: Segment[]
+}>(), {
+  zoneName: 'Zone Name',
+  existDate: 'Date',
+  segments: () => []
 })
 
-const getCategoryLabel = (color) => {
+const getCategoryLabel = (color: string): string => {
     if (color === '#CE7829') return 'Abnormal'
     if (color === '#D6C402') return 'False Alert'
     if (color === '#529B26') return 'Identified'
     return ''
 }
 
-const getTextColorClass = (color) => {
+const getTextColorClass = (color: string): string => {
     if (color === '#CE7829') return 'text-abnormal'
     if (color === '#D6C402') return 'text-false-alert'
     if (color === '#529B26') return 'text-identified'

@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { Bar } from 'vue-chartjs'
 import {
@@ -14,7 +14,9 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  type ChartData,
+  type ChartOptions
 } from 'chart.js'
 
 ChartJS.register(
@@ -26,26 +28,19 @@ ChartJS.register(
   Legend
 )
 
-const props = defineProps({
-  labels: {
-    type: Array,
-    default: () => ['2026-01-08', '2026-01-09']
-  },
-  identifiedData: {
-    type: Array,
-    default: () => [21, 22]
-  },
-  abnormalData: {
-    type: Array,
-    default: () => [8, 6]
-  },
-  falseAlertData: {
-    type: Array,
-    default: () => [4, 4]
-  }
+const props = withDefaults(defineProps<{
+  labels?: string[]
+  identifiedData?: number[]
+  abnormalData?: number[]
+  falseAlertData?: number[]
+}>(), {
+  labels: () => ['2026-01-08', '2026-01-09'],
+  identifiedData: () => [21, 22],
+  abnormalData: () => [8, 6],
+  falseAlertData: () => [4, 4]
 })
 
-const chartData = computed(() => ({
+const chartData = computed<ChartData<'bar'>>(() => ({
   labels: props.labels,
   datasets: [
     {
@@ -72,7 +67,7 @@ const chartData = computed(() => ({
   ]
 }))
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'bar'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   scales: {

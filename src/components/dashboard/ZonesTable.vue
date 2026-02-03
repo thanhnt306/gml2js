@@ -63,36 +63,46 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import FluTableView from '../fluentui/FluTableView.vue'
 import FavoriteCheckbox from '../common/FavoriteCheckbox.vue'
 import MoreAction from '../common/MoreAction.vue'
 
-const router = useRouter()
-const emit = defineEmits(['open-zone']) // Define the event
+const emit = defineEmits<{
+  'open-zone': [item: any]
+}>()
 
-const handleMoreAction = (payload) => {
+const handleMoreAction = (payload: { key: string; item: any }): void => {
     console.log('Action triggered:', payload.key, payload.item)
 }
 
-const handleRowClick = (item) => {
+const handleRowClick = (item: any): void => {
     // Emit event to parent (Zones.vue or Dashboard.vue)
-    // Parent decides whether to switch view or navigate
     console.log('Row clicked:', item)
     emit('open-zone', item)
 }
 
-const columns = [
+interface Column {
+  title: string
+  key: string
+  width: string
+}
+
+const columns: Column[] = [
     { title: 'DMA Name', key: 'zoneName', width: '80%' },
-    // Description is hidden by default in QML (width ~0)
-    // { title: 'Description', key: 'description', width: '0%' },
     { title: 'Favorite', key: 'favorite', width: '10%' },
     { title: 'More Action', key: 'moreAction', width: '10%' }
 ]
 
-const items = ref([
+interface ZoneItem {
+  zoneName: { text: string; bold: boolean; color: string }
+  description: { text: string; color: string }
+  favorite: boolean
+  moreAction: string
+}
+
+const items = ref<ZoneItem[]>([
     { 
         zoneName: { text: "Example Project 1", bold: true, color: "#A7A7A7" }, 
         description: { text: "Description for Project 1", color: "#A7A7A7" },
@@ -105,6 +115,5 @@ const items = ref([
         favorite: false,
         moreAction: "..."
     }
-    // Add more mock data if needed
 ])
 </script>

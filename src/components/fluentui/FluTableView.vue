@@ -51,39 +51,52 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue'
+<script setup lang="ts" generic="T extends Record<string, any>">
+interface Column {
+  title: string
+  key: string
+  width?: string
+}
 
-const props = defineProps({
-  columns: { type: Array, required: true }, // [{ title: 'Name', key: 'name', width: '50%' }]
-  items: { type: Array, default: () => [] },
-  showHeader: { type: Boolean, default: true },
-  borderColor: { type: String, default: null }
+const props = withDefaults(defineProps<{
+  columns: Column[]
+  items?: T[]
+  showHeader?: boolean
+  borderColor?: string | null
+}>(), {
+  items: () => [],
+  showHeader: true,
+  borderColor: null
 })
 
+// Allow any slot name (dynamic columns) to provide item and rowIndex
+defineSlots<{
+  [key: string]: (props: { item: T, rowIndex: number }) => any
+}>()
+
 // Helper to extract text from potential object structure
-const getCellText = (cellData) => {
+const getCellText = (cellData: any) => {
     if (cellData && typeof cellData === 'object' && cellData.text !== undefined) {
         return cellData.text
     }
     return cellData
 }
 
-const getCellColor = (cellData) => {
+const getCellColor = (cellData: any) => {
     if (cellData && typeof cellData === 'object' && cellData.color) {
         return cellData.color
     }
     return '#A7A7A7' // Default color
 }
 
-const getCellBold = (cellData) => {
+const getCellBold = (cellData: any) => {
     if (cellData && typeof cellData === 'object' && cellData.bold) {
         return cellData.bold
     }
     return false
 }
 
-const getCellClass = (cellData) => {
+const getCellClass = (_cellData: any) => {
      // Optional: map alignment or other props to classes
      return ''
 }

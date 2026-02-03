@@ -34,12 +34,16 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-    label: String,
-    description: String,
-    isExpanded: Boolean
-})
+<script setup lang="ts">
+interface Props {
+  label?: string
+  description?: string
+  isExpanded?: boolean
+}
 
-defineEmits(['toggle'])
+defineProps<Props>()
+
+defineEmits<{
+  toggle: []
+}>()
 </script>

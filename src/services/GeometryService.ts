@@ -1,27 +1,27 @@
 // Mock for C++ GeometryManager singleton
 
 class GeometryManager {
-    showSensorLocationsFromDatabase() {
+    showSensorLocationsFromDatabase(): void {
         console.log("[GeometryManager] showSensorLocationsFromDatabase called")
     }
 
-    removeSensorPlacements() {
+    removeSensorPlacements(): void {
         console.log("[GeometryManager] removeSensorPlacements called")
     }
 
-    switchSymbolView(mode) {
+    switchSymbolView(mode: string): void {
         console.log(`[GeometryManager] switchSymbolView called with mode: ${mode}`)
     }
 
-    changeBaseMapView(type) {
+    changeBaseMapView(type: string): void {
         console.log(`[GeometryManager] changeBaseMapView called with type: ${type}`)
     }
 
-    showLayer(layerName) {
+    showLayer(layerName: string): void {
         console.log(`[GeometryManager] showLayer: ${layerName}`)
     }
 
-    hideLayer(layerName) {
+    hideLayer(layerName: string): void {
         console.log(`[GeometryManager] hideLayer: ${layerName}`)
     }
 }

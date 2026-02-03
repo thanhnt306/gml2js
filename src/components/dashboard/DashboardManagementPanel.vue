@@ -19,11 +19,19 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import NRWIndexItem from './NRWIndexItem.vue'
 
-const items = ref([
+interface DashboardItem {
+  zoneName: string
+  cumulativePercentValue: number
+  cumulativeDate: string
+  lastUpdatePercentValue: number
+  lastUpdateDate: string
+}
+
+const items = ref<DashboardItem[]>([
     { 
         zoneName: "Example Project 1", 
         cumulativePercentValue: 20, 

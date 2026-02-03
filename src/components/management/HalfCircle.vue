@@ -32,59 +32,45 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps({
-  width: {
-    type: Number,
-    default: 200
-  },
-  radius: {
-    type: Number,
-    default: 100
-  },
-  strokeWidth: {
-    type: Number,
-    default: 10
-  },
-  segments: {
-    type: Array, // Array of values (e.g. [30, 50, 20])
-    default: () => [30, 50, 20]
-  },
-  colors: {
-    type: Array,
-    default: () => ["#529B26", "#E2A408", "#FC6B6D"]
-  },
-  showNumber: {
-    type: [Number, String],
-    default: 45
-  },
-  scale: {
-    type: Number,
-    default: 1
-  }
+const props = withDefaults(defineProps<{
+  width?: number
+  radius?: number
+  strokeWidth?: number
+  segments?: number[]
+  colors?: string[]
+  showNumber?: number | string
+  scale?: number
+}>(), {
+  width: 200,
+  radius: 100,
+  strokeWidth: 10,
+  segments: () => [30, 50, 20],
+  colors: () => ["#529B26", "#E2A408", "#FC6B6D"],
+  showNumber: 45,
+  scale: 1
 })
 
 // Determine color based on number (logic from QML)
-const numberColor = computed(() => {
-  const num = parseFloat(props.showNumber)
+const numberColor = computed<string>(() => {
+  const num = typeof props.showNumber === 'string' ? parseFloat(props.showNumber) : props.showNumber
   if (num < 25) return "#529B26"
   if (num >= 25 && num < 40) return "#E2A408"
   if (num >= 40) return "#FC6B6D"
   return "#529B26"
 })
 
-const computedSegments = computed(() => {
+interface ArcSegment {
+  d: string
+  color: string
+}
+
+const computedSegments = computed<ArcSegment[]>(() => {
   const total = 100 // Fixed total as per QML (const total = 100)
   const cx = props.width / 2
   const cy = props.width / 2 // Bottom is at radius (since height is width/2, cy should be at the bottom line)
-  // Actually in QML: width = 2*r + stroke, height = r + stroke... 
-  // Let's simplify: ViewBox 0 0 width width/2. Center is width/2, width/2.
-  // Wait, if height is width/2, then cy should be width/2.
-  
-  // QML: startAngle = Math.PI, endAngle = start + span.
-  // We need to map this to SVG arc command.
   
   let currentAngle = Math.PI
   const r = props.radius
@@ -106,17 +92,8 @@ const computedSegments = computed(() => {
     const endY = cy + r * Math.sin(endAngle)
 
     const largeArcFlag = angleSpan > Math.PI ? 1 : 0
-    const sweepFlag = 1 // Clockwise? No, in SVG Y is down. 
-    // Math.PI is 180 deg (left). 2*Math.PI is 360 (right).
-    // cos(PI) = -1, sin(PI) = 0. -> (cx-r, cy)
-    // In SVG, positive angles go clockwise from X-axis. 
-    // We want a semi-circle from left to right (top half).
-    // That means angle from PI to 0? No, PI to 2PI (if clockwise) or PI to 0 (counter-clockwise).
-    
-    // QML code: Math.PI to Math.PI + span. (180 to ...). 
-    // If we increment angle, cos goes -1 -> 0 -> 1. sin goes 0 -> -1 -> 0?
-    // In Canvas (y down), sin(PI) = 0, sin(1.5PI) = -1 (up), sin(2PI) = 0.
-    // So mapping PI to 2PI draws the top half.
+    // Fix unused sweepFlag by removing it or using correct arc param logic. 
+    // The path command uses constant '1' (clockwise)
     
     const d = [
       "M", startX, startY,

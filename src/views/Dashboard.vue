@@ -33,14 +33,15 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { useRouter } from 'vue-router'
 import StatusPanel from '@/components/dashboard/StatusPanel.vue'
 import DashboardManagementPanel from '@/components/dashboard/DashboardManagementPanel.vue'
 import ZonesTable from '@/components/dashboard/ZonesTable.vue'
+
 const router = useRouter()
 
-const handleOpenZone = (item) => {
+const handleOpenZone = (item: any): void => {
     // Navigate to Zones page and pass zone ID to open it
     // item is the row object. Assuming it has an ID or we pass a mock ID.
     console.log("Dashboard open zone:", item)

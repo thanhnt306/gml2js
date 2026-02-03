@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { Line } from 'vue-chartjs'
 import {
@@ -16,7 +16,9 @@ import {
   Title,
   Tooltip,
   Legend,
-  Filler
+  Filler,
+  type ChartData,
+  type ChartOptions
 } from 'chart.js'
 
 ChartJS.register(
@@ -30,30 +32,21 @@ ChartJS.register(
   Filler
 )
 
-const props = defineProps({
-  mode: {
-    type: String,
-    default: 'overview' // 'overview' or 'nrw'
-  },
-  dates: {
-    type: Array,
-    default: () => ['2024-04-10', '2024-04-11', '2024-04-12']
-  },
-  supplyData: {
-    type: Array,
-    default: () => [1200, 1300, 1250]
-  },
-  consumptionData: {
-    type: Array,
-    default: () => [1100, 1150, 1180]
-  },
-  nrwData: {
-    type: Array,
-    default: () => [100, 150, 70]
-  }
+const props = withDefaults(defineProps<{
+  mode?: string
+  dates?: string[]
+  supplyData?: number[]
+  consumptionData?: number[]
+  nrwData?: number[]
+}>(), {
+  mode: 'overview',
+  dates: () => ['2024-04-10', '2024-04-11', '2024-04-12'],
+  supplyData: () => [1200, 1300, 1250],
+  consumptionData: () => [1100, 1150, 1180],
+  nrwData: () => [100, 150, 70]
 })
 
-const chartData = computed(() => {
+const chartData = computed<ChartData<'line'>>(() => {
   if (props.mode === 'overview') {
     return {
       labels: props.dates,
@@ -101,7 +94,7 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = computed(() => ({
+const chartOptions = computed<ChartOptions<'line'>>(() => ({
   responsive: true,
   maintainAspectRatio: false,
   scales: {

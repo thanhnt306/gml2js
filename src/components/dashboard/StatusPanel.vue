@@ -24,18 +24,25 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
+import type { Component } from 'vue'
 import ZoneTrackerTab from './ZoneTrackerTab.vue'
 import AnalysisDateTab from './AnalysisDateTab.vue'
 
 const currentTab = ref('zoneTracker')
-const tabs = [
+
+interface Tab {
+  id: string
+  name: string
+}
+
+const tabs: Tab[] = [
     { id: 'zoneTracker', name: 'Zone Tracker' },
     { id: 'analysisDate', name: 'Analysis Date' }
 ]
 
-const activeComponent = computed(() => {
+const activeComponent = computed<Component>(() => {
     return currentTab.value === 'zoneTracker' ? ZoneTrackerTab : AnalysisDateTab
 })
 </script>

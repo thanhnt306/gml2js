@@ -1,6 +1,28 @@
 // Mock for C++ UserManager singleton
 
+export interface User {
+    id: number
+    username: string
+    firstName: string
+    lastName: string
+    company: string
+    email: string
+    position: string
+}
+
+export interface UserInfo {
+    username: () => string
+    first_name: () => string
+    last_name: () => string
+    company: () => string
+    position: () => string
+    email: () => string
+    id: () => number
+}
+
 class UserManager {
+    private _currentUser: User
+
     constructor() {
         this._currentUser = {
             id: 1,
@@ -13,7 +35,7 @@ class UserManager {
         }
     }
 
-    currentUserInfo() {
+    currentUserInfo(): UserInfo {
         // In C++ this returned a QObject with properties. Here we return a JS object.
         // We mimic the function calls as properties or functions depending on usage.
         // QML usage: UserManager.currentUserInfo().username()
@@ -29,7 +51,7 @@ class UserManager {
         }
     }
 
-    isAccountExist(username) {
+    isAccountExist(username: string): boolean {
         // Mock check
         return username.toLowerCase() === 'admin'
     }

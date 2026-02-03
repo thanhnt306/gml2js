@@ -60,15 +60,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import MapCanvas from '@/components/map/MapCanvas.vue'
 import MapToolButton from '@/components/map/MapToolButton.vue'
 import GeometryService from '@/services/GeometryService'
 
-const activePanel = ref(null)
+type PanelName = 'filter' | 'edit' | 'findPath' | 'sensor' | 'hydraulic'
 
-const togglePanel = (panelName) => {
+const activePanel = ref<PanelName | null>(null)
+
+const togglePanel = (panelName: PanelName): void => {
     if (activePanel.value === panelName) {
         activePanel.value = null
     } else {
@@ -80,7 +82,7 @@ const togglePanel = (panelName) => {
     }
 }
 
-const isPanelActive = (panelName) => {
+const isPanelActive = (panelName: PanelName): boolean => {
     return activePanel.value === panelName
 }
 </script>

@@ -12,23 +12,23 @@
   </button>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps({
-  icon: String,
-  hoverIcon: String,
-  activeIcon: String,
-  active: Boolean,
-  tooltip: String
-})
+const props = defineProps<{
+  icon?: string
+  hoverIcon?: string
+  activeIcon?: string
+  active?: boolean
+  tooltip?: string
+}>()
 
-const getIconSrc = computed(() => {
+const getIconSrc = computed<string>(() => {
     // Basic logic: if active, show activeIcon.
     // In a real app we might handle hover state with JS or CSS, 
     // but here we'll stick to simple logic for the icon source. 
     // Since images are in assets, we resolve them relative to root or public.
     const iconName = props.active ? props.activeIcon : props.icon
-    return `/src/assets/images/${iconName}`
+    return `/src/assets/images/${iconName || ''}`
 })
 </script>

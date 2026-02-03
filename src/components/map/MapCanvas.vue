@@ -8,14 +8,14 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref, onBeforeUnmount } from 'vue'
 import Map from '@arcgis/core/Map'
 import MapView from '@arcgis/core/views/MapView'
 // import TileLayer from '@arcgis/core/layers/TileLayer'
 
-const mapViewDiv = ref(null)
-let view = null
+const mapViewDiv = ref<HTMLDivElement | null>(null)
+let view: MapView | null = null
 
 onMounted(() => {
   if (mapViewDiv.value) {

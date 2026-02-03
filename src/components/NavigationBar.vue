@@ -53,6 +53,7 @@
             label="Logout"
             icon="logout_unpressed_24x24.svg"
             icon-active="logout_unpressed_24x24.svg"
+            :active="false"
             :collapsed="isCollapsed"
             @click="logout"
       />
@@ -61,7 +62,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NavButton from './NavButton.vue'
@@ -76,14 +77,22 @@ const router = useRouter()
 
 const currentRoute = computed(() => route.path)
 
-const menuItems = [
+interface MenuItem {
+    name: string
+    label: string
+    route: string
+    icon: string
+    iconActive: string
+}
+
+const menuItems: MenuItem[] = [
   { name: 'dashboard', label: 'Dashboard', route: '/app/dashboard', icon: 'dashboard_unpressed_24x24.svg', iconActive: 'dashboard_pressed_24x24.svg' },
   { name: 'zones', label: 'Zones', route: '/app/zones', icon: 'zones_unpressed_24x24.svg', iconActive: 'zones_pressed_24x24.svg' },
   { name: 'management', label: 'Management', route: '/app/management', icon: 'management_unpressed_26x26.svg', iconActive: 'management_pressed_26x26.svg' },
   { name: 'map', label: 'Map', route: '/app/map', icon: 'map_unpressed_26x26.svg', iconActive: 'map_pressed_26x26.svg' }
 ]
 
-const logout = () => {
+const logout = (): void => {
     // TODO: Implement logout logic
     router.push('/login')
 }

@@ -4,16 +4,27 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import FluTableView from '../fluentui/FluTableView.vue'
 
-const columns = [
+interface Column {
+  title: string
+  key: string
+  width: string
+}
+
+const columns: Column[] = [
     { title: 'Zone', key: 'zoneName', width: '50%' },
     { title: 'Latest Analysis Date', key: 'lastDate', width: '50%' }
 ]
 
-const items = ref([
+interface AnalysisItem {
+  zoneName: { text: string; bold: boolean; color: string }
+  lastDate: { text: string; bold: boolean; color: string }
+}
+
+const items = ref<AnalysisItem[]>([
     { 
         // Using object structure to mimic QML customItem
         zoneName: { text: "Example Project 1", bold: false, color: "#FFFFFF" }, 

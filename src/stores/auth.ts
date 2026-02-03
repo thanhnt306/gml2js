@@ -1,11 +1,21 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export const useAuthStore = defineStore('auth', () => {
-    const user = ref(null)
-    const isAuthenticated = ref(false)
+export interface User {
+    id: number
+    username: string
+    firstName: string
+    lastName: string
+    company: string
+    email: string
+    position: string
+}
 
-    const login = async (username, password) => {
+export const useAuthStore = defineStore('auth', () => {
+    const user = ref<User | null>(null)
+    const isAuthenticated = ref<boolean>(false)
+
+    const login = async (username: string, password: string): Promise<boolean> => {
         // Mock login logic
         console.log(`Attempting login for ${username}`)
         // Simulate API delay
@@ -27,7 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
         return false
     }
 
-    const logout = () => {
+    const logout = (): void => {
         user.value = null
         isAuthenticated.value = false
     }

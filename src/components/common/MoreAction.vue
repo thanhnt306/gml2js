@@ -33,33 +33,48 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 
-const props = defineProps({
-    // You can pass the item/row data here if needed to emit with the action
-    item: { type: Object, default: () => ({}) }
+interface Props {
+  item?: Record<string, any>
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  item: () => ({})
 })
 
-const emit = defineEmits(['action'])
+interface ActionItem {
+  label: string
+  key: string
+}
+
+interface ActionEvent {
+  key: string
+  item: Record<string, any>
+}
+
+const emit = defineEmits<{
+  action: [event: ActionEvent]
+}>()
 
 const isOpen = ref(false)
 
-const actions = [
+const actions: ActionItem[] = [
     { label: 'Rename', key: 'rename' },
     { label: 'Permission setting', key: 'permission' },
     { label: 'Delete', key: 'delete' }
 ]
 
-const toggleMenu = () => {
+const toggleMenu = (): void => {
     isOpen.value = !isOpen.value
 }
 
-const closeMenu = () => {
+const closeMenu = (): void => {
     isOpen.value = false
 }
 
-const handleAction = (action) => {
+const handleAction = (action: ActionItem): void => {
     emit('action', { key: action.key, item: props.item })
     closeMenu()
 }

@@ -19,17 +19,27 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  checkedColor: { type: String, default: '#7A7A7A' },
-  borderColor: { type: String, default: '#7A7A7A' },
-  size: { type: [Number, String], default: 20 }
+<script setup lang="ts">
+interface Props {
+  modelValue?: boolean
+  checkedColor?: string
+  borderColor?: string
+  size?: number | string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: false,
+  checkedColor: '#7A7A7A',
+  borderColor: '#7A7A7A',
+  size: 20
 })
 
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  change: [value: boolean]
+}>()
 
-const toggle = () => {
+const toggle = (): void => {
     const newValue = !props.modelValue
     emit('update:modelValue', newValue)
     emit('change', newValue)

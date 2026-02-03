@@ -12,7 +12,7 @@
     <!-- Centered Card -->
     <div class="relative z-10 flex items-center justify-center min-h-screen">
         <div class="flex bg-[#202020] rounded-[15px] shadow-2xl overflow-hidden backdrop-blur-sm bg-opacity-80" 
-             style="width: 907px; height: 628px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+             style="width:907px; height: 628px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
             
             <!-- Video Section (Left) -->
             <div class="w-[442px] h-full p-3">
@@ -40,6 +40,6 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import LoginForm from '../components/auth/LoginForm.vue'
 </script>

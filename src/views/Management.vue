@@ -165,30 +165,43 @@
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import { ref, h, defineComponent } from 'vue'
 import HalfCircle from '@/components/management/HalfCircle.vue'
 import ManagementChart from '@/components/management/ManagementChart.vue'
 import InspectionChart from '@/components/management/InspectionChart.vue'
 
-import { defineComponent, h } from 'vue'
+// Custom component for table cell with label/value styling
 const StatBox = defineComponent({
-  props: ['label', 'value'],
-  render() {
-    return h('div', { class: 'bg-white/5 rounded-lg px-2 py-1 w-full h-[43px] flex items-center justify-between' }, [
-       h('span', { class: 'text-[11px] font-medium' }, this.label),
-       h('span', { class: 'text-[13px] font-light' }, this.value)
+  props: {
+    label: String,
+    value: [String, Number]
+  },
+  setup(props) {
+    return () => h('div', { class: 'bg-white/5 rounded-lg px-2 py-1 w-full h-[43px] flex items-center justify-between' }, [
+       h('span', { class: 'text-[11px] font-medium' }, props.label),
+       h('span', { class: 'text-[13px] font-light' }, props.value)
     ])
   }
 })
 
-const zones = ref([
+interface Zone {
+  id: number
+  name: string
+}
+
+const zones = ref<Zone[]>([
   { id: 1, name: 'BT1302' },
   { id: 2, name: 'Example Project 2' }
 ])
 const selectedZone = ref(1)
 
-const tabs = [
+interface Tab {
+  id: string
+  label: string
+}
+
+const tabs: Tab[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'nrw', label: 'NRW' }
 ]

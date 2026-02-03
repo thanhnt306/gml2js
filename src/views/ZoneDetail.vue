@@ -75,23 +75,26 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import ContentTabItem from '@/components/zones/ContentTabItem.vue'
 
-const router = useRouter()
+type TabName = 'network' | 'operation' | 'analysis' | 'anomaly'
+
 const route = useRoute()
 const zoneName = ref('Loading...')
-const expandedTab = ref('network') // Default expanded
+const expandedTab = ref<TabName | null>('network') // Default expanded
 
-const emit = defineEmits(['back'])
+const emit = defineEmits<{
+  back: []
+}>()
 
-const goBack = () => {
+const goBack = (): void => {
     emit('back')
 }
 
-const toggleTab = (tab) => {
+const toggleTab = (tab: TabName): void => {
     // If clicking same tab, collapse it (optional behavior, QML code suggests toggle)
     if (expandedTab.value === tab) {
         expandedTab.value = null
