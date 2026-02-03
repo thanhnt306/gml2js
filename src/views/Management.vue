@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex flex-col mb-4 bg-transparent">
       <div class="text-2xl font-bold mb-4 ml-[6%]">Management</div>
-      <div class="w-[977px] h-[1px] bg-[#5D5D5D] ml-[6%] mb-4"></div>
+      <div class="w-full h-[1px] bg-[#5D5D5D] ml-[6%] mb-4 max-w-[977px]"></div>
     </div>
 
     <!-- Zone Selector (Separate Section) -->
@@ -29,7 +29,7 @@
       <div class="flex-1 flex gap-6 min-h-0">
         
           <!-- Left Column -->
-          <div class="flex-1 flex flex-col min-h-0">
+          <div class="flex-1 flex flex-col min-h-0 min-w-0">
               
               <!-- Tabs -->
               <div class="flex-none flex mb-2 h-[34px]">
