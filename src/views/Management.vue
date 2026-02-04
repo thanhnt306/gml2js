@@ -50,7 +50,7 @@
 
               <!-- Main Chart Graph Area -->
               <!-- Added min-h-[300px] to prevent shrinking too small -->
-              <div class="flex-1 relative w-full min-h-[300px] mb-2 bg-white/10 rounded-lg p-2 overflow-hidden flex flex-col">
+              <div class="flex-1 relative w-full min-h-[300px] mb-2 bg-white/10 rounded-lg overflow-hidden">
                  <!-- Dates (Top Right inside Chart Area) -->
                  <div class="absolute top-2 right-2 flex items-center space-x-2 text-[10px] text-[#A7A7A7] z-20">
                    <span>from</span>
@@ -69,7 +69,8 @@
                     <div class="flex items-center gap-2"><div class="w-[40px] h-[4px] bg-[#C96E14]"></div> <span>NRW</span></div>
                  </div>
                  
-                 <div class="w-full flex-1 pt-6 min-h-0 relative"> <!-- Changed h-full to flex-1 and added min-h-0 -->
+                 <!-- Chart Container - Absolutely positioned to fill parent -->
+                 <div class="absolute inset-0 pt-8 pb-2 px-2 z-0">
                    <ManagementChart :mode="currentTab" 
                      :dates="['07-18-2023', '08-10-2023', '09-01-2023', '09-24-2023', '10-17-2023']" 
                      :supplyData="[386, 400, 500, 550, 294]"
