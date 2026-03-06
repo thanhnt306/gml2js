@@ -30,8 +30,9 @@
                 :isExpanded="expandedTab === 'network'"
                 @toggle="toggleTab('network')"
               >
-                 <div class="h-[200px] bg-white/5 rounded flex items-center justify-center text-gray-500">
-                    Network Detail Page Placeholder
+                 <!-- Network Wizard Container -->
+                 <div class="w-full bg-[#151515] rounded-lg p-4 min-h-[500px]">
+                    <NetworkSetupWizard />
                  </div>
               </ContentTabItem>
 
@@ -79,6 +80,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ContentTabItem from '@/components/zones/ContentTabItem.vue'
+import NetworkSetupWizard from '@/components/zones/network/NetworkSetupWizard.vue'
 
 type TabName = 'network' | 'operation' | 'analysis' | 'anomaly'
 
