@@ -55,15 +55,29 @@ const router = createRouter({
     routes
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
+
     if (to.matched.some(record => record.meta.requiresAuth)) {
-        if (!authStore.isAuthenticated) {
-            next({ name: 'login' })
+        // If we don't have an access token in memory
+        if (!authStore.accessToken) {
+            try {
+                // Try to refresh the token using the HttpOnly cookie
+                await authStore.refresh()
+                // If successful, we can also fetch the user profile if needed here, 
+                // or let the components handle it. Let's fetch it to be safe.
+                await authStore.fetchUser()
+                next()
+            } catch (error) {
+                // Refresh failed (no cookie, expired, etc.), must login
+                next({ name: 'login' })
+            }
         } else {
+            // Token exists in memory, proceed
             next()
         }
     } else {
+        // Route doesn't require auth
         next()
     }
 })

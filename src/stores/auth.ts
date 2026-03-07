@@ -1,46 +1,91 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import api from '../services/api'; // Import our new Axios instance
 
 export interface User {
-    id: number
-    username: string
-    firstName: string
-    lastName: string
-    company: string
-    email: string
-    position: string
+    id: number;
+    username: string;
+    firstName: string;
+    lastName: string;
+    company: string;
+    email: string;
+    position: string;
 }
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref<User | null>(null)
-    const isAuthenticated = ref<boolean>(false)
+    // State
+    const user = ref<User | null>(null);
+    const isAuthenticated = ref<boolean>(false);
 
+    // Access token stored in memory ONLY (Not localStorage - XSS protection)
+    const accessToken = ref<string | null>(null);
+
+    // Actions
     const login = async (username: string, password: string): Promise<boolean> => {
-        // Mock login logic
-        console.log(`Attempting login for ${username}`)
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        try {
+            // Call the login endpoint. 
+            // The backend MUST return the 'accessToken' in the JSON body 
+            // AND set the 'refreshToken' in an HttpOnly cookie.
+            const response = await api.post('/auth/login', { username, password });
 
-        if (username === 'admin' && password === 'admin') {
-            user.value = {
-                id: 1,
-                username: 'admin',
-                firstName: 'Admin',
-                lastName: 'User',
-                company: 'EFAS',
-                email: 'admin@efas.com',
-                position: 'Administrator'
-            }
-            isAuthenticated.value = true
-            return true
+            accessToken.value = response.data.accessToken;
+            isAuthenticated.value = true;
+
+            // Fetch user profile immediately after login
+            await fetchUser();
+
+            return true;
+        } catch (error) {
+            console.error('Login failed:', error);
+            // Optionally clear state on failure
+            accessToken.value = null;
+            isAuthenticated.value = false;
+            user.value = null;
+            return false;
         }
-        return false
-    }
+    };
 
-    const logout = (): void => {
-        user.value = null
-        isAuthenticated.value = false
-    }
+    const fetchUser = async (): Promise<void> => {
+        try {
+            // Uses the accessToken thanks to the request interceptor in api.ts
+            const response = await api.get('/auth/me');
+            user.value = response.data.user;
+        } catch (error) {
+            console.error('Failed to fetch user:', error);
+            throw error;
+        }
+    };
 
-    return { user, isAuthenticated, login, logout }
-})
+    const refresh = async (): Promise<string> => {
+        try {
+            // The backend MUST read the HttpOnly Refresh Cookie from the request
+            // and return a fresh new Access Token.
+            const response = await api.post('/auth/refresh');
+
+            accessToken.value = response.data.accessToken;
+            isAuthenticated.value = true;
+
+            return accessToken.value as string;
+        } catch (error) {
+            console.error('Token refresh failed:', error);
+            // If refresh fails (e.g., cookie expired), clear state
+            logout();
+            throw error;
+        }
+    };
+
+    const logout = async (): Promise<void> => {
+        try {
+            // Tell backend to invalidate/clear the HttpOnly cookie
+            await api.post('/auth/logout');
+        } catch (error) {
+            console.error('Logout request failed, cleaning up local state anyway:', error);
+        } finally {
+            user.value = null;
+            isAuthenticated.value = false;
+            accessToken.value = null;
+        }
+    };
+
+    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser };
+});
