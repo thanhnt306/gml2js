@@ -43,8 +43,9 @@
                 :isExpanded="expandedTab === 'operation'"
                 @toggle="toggleTab('operation')"
               >
-                  <div class="h-[150px] bg-white/5 rounded flex items-center justify-center text-gray-500">
-                    Operational Data Page Placeholder
+                 <!-- Operational Data Wizard Container -->
+                 <div class="w-full bg-[#151515] rounded-lg p-4">
+                    <OperationalDataImport />
                  </div>
               </ContentTabItem>
 
@@ -55,8 +56,9 @@
                 :isExpanded="expandedTab === 'analysis'"
                 @toggle="toggleTab('analysis')"
               >
-                  <div class="h-[150px] bg-white/5 rounded flex items-center justify-center text-gray-500">
-                    Analysis Setting Page Placeholder
+                  <!-- Analysis Setting -->
+                 <div class="w-full">
+                    <AnalysisSetting />
                  </div>
               </ContentTabItem>
 
@@ -67,8 +69,9 @@
                 :isExpanded="expandedTab === 'anomaly'"
                 @toggle="toggleTab('anomaly')"
               >
-                  <div class="h-[300px] bg-white/5 rounded flex items-center justify-center text-gray-500">
-                    Anomaly Report Page Placeholder
+                  <!-- Anomaly Report -->
+                 <div class="w-full">
+                    <AnomalyReport />
                  </div>
               </ContentTabItem>
           </div>
@@ -81,6 +84,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ContentTabItem from '@/components/zones/ContentTabItem.vue'
 import NetworkSetupWizard from '@/components/zones/network/NetworkSetupWizard.vue'
+import OperationalDataImport from '@/components/zones/operation/OperationalDataImport.vue'
+import AnalysisSetting from '@/components/zones/analysis/AnalysisSetting.vue'
+import AnomalyReport from '@/components/zones/anomaly/AnomalyReport.vue'
 
 type TabName = 'network' | 'operation' | 'analysis' | 'anomaly'
 
