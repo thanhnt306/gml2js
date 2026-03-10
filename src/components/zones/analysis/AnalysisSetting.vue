@@ -114,13 +114,11 @@
           <!-- Resource Usage -->
           <div class="flex items-center justify-between py-2">
             <span class="text-white font-montserrat font-normal text-sm">Resource Usage:</span>
-            <select
+            <BaseSelect 
               v-model="config.resourceUsage"
-              class="bg-[#529B26] hover:bg-[#6cc537] text-white font-montserrat font-semibold text-xs
-                     rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer border-none transition-colors"
-            >
-              <option v-for="opt in resourceOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
+              :options="resourceOptions"
+              class="w-[120px]"
+            />
           </div>
           <div class="h-px bg-white/5"/>
 
@@ -224,6 +222,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
+import BaseSelect from '@/components/common/BaseSelect.vue'
 
 interface AnalysisTargets {
   hydraulics: boolean

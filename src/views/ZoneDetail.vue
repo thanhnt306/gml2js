@@ -2,7 +2,7 @@
   <div class="w-full h-full p-8 bg-[#202020] rounded-[15px] flex flex-col relative">
       <!-- Back Button -->
       <button 
-        class="absolute top-8 left-8 flex items-center space-x-0 hover:bg-[#a1535353] rounded px-1 transition-colors"
+        class="absolute top-8 left-8 flex items-center space-x-0 hover:bg-[#535353a1] rounded px-1 transition-colors"
         @click="goBack"
       >
           <img src="@/assets/images/expand_more_left_24x24.svg" class="w-6 h-6" />
@@ -31,7 +31,7 @@
                 @toggle="toggleTab('network')"
               >
                  <!-- Network Wizard Container -->
-                 <div class="w-full bg-[#151515] rounded-lg p-4 min-h-[500px]">
+                 <div class="w-full bg-[#4B4B4B] rounded-lg p-4 min-h-[500px]">
                     <NetworkSetupWizard />
                  </div>
               </ContentTabItem>
@@ -117,3 +117,16 @@ onMounted(() => {
     zoneName.value = `Example Project ${id}` 
 })
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4B5563;
+    border-radius: 20px;
+}
+</style>

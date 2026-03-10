@@ -73,6 +73,7 @@ const toggleStep = (step: number) => {
     if (currentStep.value === step) {
         // Optional: collapse if clicked again? Or just stay open.
         // QML logic seems to allow clicking title to expand.
+        currentStep.value = 0
     } else {
         currentStep.value = step
     }

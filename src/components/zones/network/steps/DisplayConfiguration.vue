@@ -4,20 +4,12 @@
       
       <!-- Date Time Format -->
       <div class="flex items-center justify-between">
-         <span class="text-white font-montserrat text-sm">DateTime Format:</span>
+         <span class="text-white font-montserrat text-sm">Date Time Format:</span>
          <div class="relative w-[180px]">
-            <select 
-             v-model="config.dateFormat"
-             class="w-full bg-[#1A1A1A] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 appearance-none focus:outline-none focus:border-[#529B26]"
-            >
-              <option value="dd/MM/yyyy">dd/MM/yyyy</option>
-              <option value="MM/dd/yyyy">MM/dd/yyyy</option>
-              <option value="dd-MM-yyyy">dd-MM-yyyy</option>
-              <option value="MM-dd-yyyy">MM-dd-yyyy</option>
-            </select>
-            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 <img src="@/assets/images/expand_down_white_24x24.svg" class="w-4 h-4 opacity-70" />
-            </div>
+            <BaseSelect 
+              v-model="config.dateFormat"
+              :options="['dd/MM/yyyy', 'MM/dd/yyyy', 'dd-MM-yyyy', 'MM-dd-yyyy']"
+            />
          </div>
       </div>
 
@@ -25,15 +17,10 @@
       <div class="flex items-center justify-between">
          <span class="text-white font-montserrat text-sm">Flow Unit:</span>
          <div class="relative w-[180px]">
-            <select 
-             v-model="config.flowUnit"
-             class="w-full bg-[#1A1A1A] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 appearance-none focus:outline-none focus:border-[#529B26]"
-            >
-              <option v-for="unit in flowUnits" :key="unit" :value="unit">{{ unit }}</option>
-            </select>
-            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 <img src="@/assets/images/expand_down_white_24x24.svg" class="w-4 h-4 opacity-70" />
-            </div>
+            <BaseSelect 
+              v-model="config.flowUnit"
+              :options="flowUnits"
+            />
          </div>
       </div>
 
@@ -41,15 +28,10 @@
       <div class="flex items-center justify-between">
          <span class="text-white font-montserrat text-sm">Pressure Unit:</span>
          <div class="relative w-[180px]">
-            <select 
-             v-model="config.pressureUnit"
-             class="w-full bg-[#1A1A1A] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 appearance-none focus:outline-none focus:border-[#529B26]"
-            >
-              <option v-for="unit in pressureUnits" :key="unit" :value="unit">{{ unit }}</option>
-            </select>
-             <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 <img src="@/assets/images/expand_down_white_24x24.svg" class="w-4 h-4 opacity-70" />
-            </div>
+            <BaseSelect 
+              v-model="config.pressureUnit"
+              :options="pressureUnits"
+            />
          </div>
       </div>
 
@@ -57,15 +39,10 @@
       <div class="flex items-center justify-between">
          <span class="text-white font-montserrat text-sm">Consumption Unit:</span>
          <div class="relative w-[180px]">
-            <select 
-             v-model="config.consumptionUnit"
-             class="w-full bg-[#1A1A1A] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 appearance-none focus:outline-none focus:border-[#529B26]"
-            >
-               <option v-for="unit in consumptionUnits" :key="unit" :value="unit">{{ unit }}</option>
-            </select>
-             <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 <img src="@/assets/images/expand_down_white_24x24.svg" class="w-4 h-4 opacity-70" />
-            </div>
+            <BaseSelect 
+              v-model="config.consumptionUnit"
+              :options="consumptionUnits"
+            />
          </div>
       </div>
 
@@ -85,6 +62,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
+import BaseSelect from '@/components/common/BaseSelect.vue'
 
 const emit = defineEmits<{
   (e: 'next'): void

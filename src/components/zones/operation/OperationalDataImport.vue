@@ -27,40 +27,35 @@
           Follow the 3 steps below to import your data. Please ensure your data is accurate and properly formatted.
         </p>
 
-        <div class="flex flex-col divide-y divide-[#2a2a2a]">
+        <div class="flex flex-col mt-4">
           <!-- Step 1: Inlet -->
-          <div class="py-5 first:pt-0">
-            <DataImportStep
-              ref="inletStepRef"
-              number="1"
-              label="Import Inlet Data"
-              type="inlet"
-              :defaultOpen="true"
-              @upload="handleUpload('inlet', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="inletStepRef"
+            number="1"
+            label="Import Inlet Data"
+            type="inlet"
+            :defaultOpen="true"
+            @upload="handleUpload('inlet', $event)"
+          />
 
           <!-- Step 2: Consumption -->
-          <div class="py-5">
-            <DataImportStep
-              ref="consumptionStepRef"
-              number="2"
-              label="Import Consumption Data"
-              type="consumption"
-              @upload="handleUpload('consumption', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="consumptionStepRef"
+            number="2"
+            label="Import Consumption Data"
+            type="consumption"
+            @upload="handleUpload('consumption', $event)"
+          />
 
           <!-- Step 3: Sensor -->
-          <div class="py-5">
-            <DataImportStep
-              ref="sensorStepRef"
-              number="3"
-              label="Import Sensor Data"
-              type="sensor"
-              @upload="handleUpload('sensor', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="sensorStepRef"
+            number="3"
+            label="Import Sensor Data"
+            type="sensor"
+            :isLastStep="true"
+            @upload="handleUpload('sensor', $event)"
+          />
         </div>
 
         <!-- Action bar (bottom) -->
@@ -82,51 +77,44 @@
           These files are optional but improve the accuracy of the analysis.
         </p>
 
-        <div class="flex flex-col divide-y divide-[#2a2a2a]">
+        <div class="flex flex-col mt-4">
           <!-- Step 5: Valve -->
-          <div class="py-5 first:pt-0">
-            <DataImportStep
-              ref="valveStepRef"
-              number="5"
-              label="Import Valve Data"
-              type="generic"
-              :defaultOpen="true"
-              @upload="handleUpload('valve', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="valveStepRef"
+            number="5"
+            label="Import Valve Data"
+            type="generic"
+            :defaultOpen="true"
+            @upload="handleUpload('valve', $event)"
+          />
 
           <!-- Step 6: Pump -->
-          <div class="py-5">
-            <DataImportStep
-              ref="pumpStepRef"
-              number="6"
-              label="Import Pump Data"
-              type="generic"
-              @upload="handleUpload('pump', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="pumpStepRef"
+            number="6"
+            label="Import Pump Data"
+            type="generic"
+            @upload="handleUpload('pump', $event)"
+          />
 
           <!-- Step 7: Tank -->
-          <div class="py-5">
-            <DataImportStep
-              ref="tankStepRef"
-              number="7"
-              label="Import Tank Data"
-              type="generic"
-              @upload="handleUpload('tank', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="tankStepRef"
+            number="7"
+            label="Import Tank Data"
+            type="generic"
+            @upload="handleUpload('tank', $event)"
+          />
 
           <!-- Step 8: Reservoir -->
-          <div class="py-5">
-            <DataImportStep
-              ref="reservoirStepRef"
-              number="8"
-              label="Import Reservoir Data"
-              type="generic"
-              @upload="handleUpload('reservoir', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="reservoirStepRef"
+            number="8"
+            label="Import Reservoir Data"
+            type="generic"
+            :isLastStep="true"
+            @upload="handleUpload('reservoir', $event)"
+          />
         </div>
 
         <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2a2a2a]">
@@ -147,29 +135,26 @@
           Additional supplementary data to enhance system modelling precision.
         </p>
 
-        <div class="flex flex-col divide-y divide-[#2a2a2a]">
+        <div class="flex flex-col mt-4">
           <!-- Step 9: Control Statement -->
-          <div class="py-5 first:pt-0">
-            <DataImportStep
-              ref="controlStepRef"
-              number="9"
-              label="Import Control Statement Data"
-              type="generic"
-              :defaultOpen="true"
-              @upload="handleUpload('control', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="controlStepRef"
+            number="9"
+            label="Import Control Statement Data"
+            type="generic"
+            :defaultOpen="true"
+            @upload="handleUpload('control', $event)"
+          />
 
           <!-- Step 10: Leak History -->
-          <div class="py-5">
-            <DataImportStep
-              ref="leakHistoryStepRef"
-              number="10"
-              label="Import Leak History Data"
-              type="generic"
-              @upload="handleUpload('leakHistory', $event)"
-            />
-          </div>
+          <DataImportStep
+            ref="leakHistoryStepRef"
+            number="10"
+            label="Import Leak History Data"
+            type="generic"
+            :isLastStep="true"
+            @upload="handleUpload('leakHistory', $event)"
+          />
         </div>
 
         <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2a2a2a]">

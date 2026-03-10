@@ -3,20 +3,27 @@
     A single import step card with an expand/collapse header,
     a file dropzone on the left and a config panel on the right.
   -->
-  <div class="w-full">
-    <!-- Step Header (clickable to expand/collapse) -->
+  <div class="flex flex-col w-full">
+    <!-- Step Header -->
     <button
-      class="w-full flex items-center gap-3 text-left mb-0"
+      class="flex items-center cursor-pointer mb-4 tap-highlight-transparent w-full text-left"
       @click="isOpen = !isOpen"
     >
       <!-- Step number badge -->
-      <span
-        class="flex-shrink-0 w-8 h-8 rounded-full bg-[#529B26] flex items-center justify-center
-               font-montserrat font-semibold text-white text-xs"
+      <div
+        class="flex-none flex items-center justify-center rounded-full transition-colors duration-200"
+        :class="isOpen ? 'bg-[#529B26]' : 'bg-[#A7A7A7]'"
+        style="width: 32px; height: 32px;"
       >
-        {{ number }}
+        <span class="text-white font-montserrat font-bold text-sm">{{ number }}</span>
+      </div>
+      <!-- Label -->
+      <span
+        class="ml-4 font-montserrat font-semibold text-[15px] flex-1 transition-colors duration-200"
+        :class="isOpen ? 'text-white' : 'text-[#A7A7A7]'"
+      >
+        {{ label }}
       </span>
-      <h3 class="text-white font-montserrat font-semibold text-[15px] flex-1">{{ label }}</h3>
       <!-- Chevron -->
       <svg
         class="w-4 h-4 text-[#A7A7A7] transition-transform duration-200 flex-shrink-0"
@@ -27,9 +34,26 @@
       </svg>
     </button>
 
-    <!-- Expand/collapse body -->
-    <Transition name="slide-down">
-      <div v-if="isOpen" class="mt-4 flex flex-col md:flex-row gap-6">
+    <!-- Content Area with connector line -->
+    <div class="flex relative">
+      <!-- Vertical Connector Line -->
+      <div 
+        v-if="!isLastStep"
+        class="absolute bg-[#A7A7A7] w-[1px]"
+        style="left: 16px; top: -10px; bottom: 0px;"
+      ></div>
+
+      <!-- Expand/collapse body -->
+      <div 
+        class="flex-1 transition-all duration-300 overflow-hidden"
+        :style="{ 
+            paddingLeft: '48px',
+            maxHeight: isOpen ? '2000px' : '0px',
+            opacity: isOpen ? 1 : 0,
+            marginBottom: isOpen ? '24px' : '0px'
+        }"
+      >
+        <div class="flex flex-col md:flex-row gap-6 pt-1">
         <!-- LEFT: File Dropzone -->
         <div class="flex flex-col gap-2 min-w-0 flex-1">
           <!-- Sub-step label 1 -->
@@ -131,7 +155,8 @@
           </div>
         </div>
       </div>
-    </Transition>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -161,11 +186,13 @@ interface Props {
   label: string
   type?: StepType
   defaultOpen?: boolean
+  isLastStep?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   type: 'generic',
-  defaultOpen: false
+  defaultOpen: false,
+  isLastStep: false
 })
 
 defineEmits<{
@@ -219,19 +246,7 @@ defineExpose({ reset })
 </script>
 
 <style scoped>
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.25s ease;
-  overflow: hidden;
-}
-.slide-down-enter-from,
-.slide-down-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-.slide-down-enter-to,
-.slide-down-leave-from {
-  max-height: 1000px;
-  opacity: 1;
+.tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
 }
 </style>
