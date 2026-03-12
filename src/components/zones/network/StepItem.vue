@@ -32,8 +32,8 @@
         :class="isExpanded ? 'opacity-100' : 'opacity-100'"
         :style="{ 
            left: (iconSize / 2) + 'px', 
-           top: '-10px', 
-           bottom: '0px'
+           top: '-5px', 
+           bottom: '-10px'
         }"
       ></div>
       

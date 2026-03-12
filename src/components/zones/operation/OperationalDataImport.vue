@@ -18,16 +18,18 @@
     </div>
 
     <!-- Content Panel -->
-    <div class="bg-white/10 rounded-[6px] p-6 flex-1">
+    <div class="bg-white/10 rounded-[6px] p-6 flex-1 overflow-y-auto custom-scrollbar pr-4 max-h-[600px]">
 
       <!-- ============ PAGE 1: Required Data ============ -->
       <div v-show="activePage === 'page1'">
-        <h2 class="text-[#5DB22A] font-montserrat font-semibold text-xl mb-1">Upload your Operational Data</h2>
-        <p class="text-[#A7A7A7] font-inter font-light text-xs mb-6 leading-relaxed">
-          Follow the 3 steps below to import your data. Please ensure your data is accurate and properly formatted.
-        </p>
+        <div class="mb-8 pl-4">
+          <h2 class="text-[#529B26] font-montserrat font-semibold text-2xl mb-2">Upload your Operational Data</h2>
+          <p class="text-[#A7A7A7] font-inter font-light text-sm max-w-[600px]">
+            Follow the 3 steps below to import your data. Please ensure your data is accurate and properly formatted.
+          </p>
+        </div>
 
-        <div class="flex flex-col mt-4">
+        <div class="flex flex-col space-y-6 pl-4">
           <!-- Step 1: Inlet -->
           <DataImportStep
             ref="inletStepRef"
@@ -59,7 +61,7 @@
         </div>
 
         <!-- Action bar (bottom) -->
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2a2a2a]">
+        <div class="flex justify-end gap-3 mt-6 pt-4 ml-4 border-t border-[#A7A7A7]/30">
           <button
             @click="clearAll"
             class="px-5 py-2 rounded-lg font-montserrat font-semibold text-sm text-[#A7A7A7] border border-[#5D5D5D]
@@ -72,12 +74,14 @@
 
       <!-- ============ PAGE 2: Optional Data ============ -->
       <div v-show="activePage === 'page2'">
-        <h2 class="text-[#5DB22A] font-montserrat font-semibold text-xl mb-1">Upload your Operational Data</h2>
-        <p class="text-[#A7A7A7] font-inter font-light text-xs mb-6 leading-relaxed">
-          These files are optional but improve the accuracy of the analysis.
-        </p>
+        <div class="mb-8 pl-4">
+          <h2 class="text-[#529B26] font-montserrat font-semibold text-2xl mb-2">Upload your Operational Data</h2>
+          <p class="text-[#A7A7A7] font-inter font-light text-sm max-w-[600px]">
+            These files are optional but improve the accuracy of the analysis.
+          </p>
+        </div>
 
-        <div class="flex flex-col mt-4">
+        <div class="flex flex-col space-y-6 pl-4">
           <!-- Step 5: Valve -->
           <DataImportStep
             ref="valveStepRef"
@@ -117,7 +121,7 @@
           />
         </div>
 
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2a2a2a]">
+        <div class="flex justify-end gap-3 mt-6 pt-4 ml-4 border-t border-[#A7A7A7]/30">
           <button
             @click="clearAll"
             class="px-5 py-2 rounded-lg font-montserrat font-semibold text-sm text-[#A7A7A7] border border-[#5D5D5D]
@@ -130,12 +134,14 @@
 
       <!-- ============ PAGE 3: Other Data ============ -->
       <div v-show="activePage === 'page3'">
-        <h2 class="text-[#5DB22A] font-montserrat font-semibold text-xl mb-1">Upload your Operational Data</h2>
-        <p class="text-[#A7A7A7] font-inter font-light text-xs mb-6 leading-relaxed">
-          Additional supplementary data to enhance system modelling precision.
-        </p>
+        <div class="mb-8 pl-4">
+          <h2 class="text-[#529B26] font-montserrat font-semibold text-2xl mb-2">Upload your Operational Data</h2>
+          <p class="text-[#A7A7A7] font-inter font-light text-sm max-w-[600px]">
+            Additional supplementary data to enhance system modelling precision.
+          </p>
+        </div>
 
-        <div class="flex flex-col mt-4">
+        <div class="flex flex-col space-y-6 pl-4">
           <!-- Step 9: Control Statement -->
           <DataImportStep
             ref="controlStepRef"
@@ -157,7 +163,7 @@
           />
         </div>
 
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[#2a2a2a]">
+        <div class="flex justify-end gap-3 mt-6 pt-4 ml-4 border-t border-[#A7A7A7]/30">
           <button
             @click="clearAll"
             class="px-5 py-2 rounded-lg font-montserrat font-semibold text-sm text-[#A7A7A7] border border-[#5D5D5D]
@@ -269,5 +275,16 @@ const clearAll = (): void => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+/* Custom Scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4B5563;
+    border-radius: 20px;
 }
 </style>

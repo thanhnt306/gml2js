@@ -14,8 +14,8 @@
 
         <div class="bg-white/10 rounded-[10px] p-5 flex flex-col gap-1">
           <!-- Hydraulics Analysis -->
-          <label class="flex items-center justify-between py-2 cursor-pointer group">
-            <span class="text-white font-montserrat font-normal text-sm group-hover:text-[#5DB22A] transition-colors">
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <span class="text-white font-montserrat font-normal text-sm transition-colors">
               Hydraulics Analysis:
             </span>
             <input
@@ -27,8 +27,7 @@
               class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
               :class="targets.hydraulics
                 ? 'bg-[#529B26] border-[#529B26]'
-                : 'bg-transparent border-[#5D5D5D] group-hover:border-[#529B26]'"
-              @click="targets.hydraulics = !targets.hydraulics"
+                : 'bg-transparent border-[#529B26]'"
             >
               <svg v-if="targets.hydraulics" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
@@ -38,8 +37,8 @@
           <div class="h-px bg-white/5"/>
 
           <!-- Leak Detection -->
-          <label class="flex items-center justify-between py-2 cursor-pointer group">
-            <span class="text-white font-montserrat font-normal text-sm group-hover:text-[#5DB22A] transition-colors">
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <span class="text-white font-montserrat font-normal text-sm transition-colors">
               Leak Detection:
             </span>
             <input type="checkbox" v-model="targets.leakDetection" class="hidden"/>
@@ -47,8 +46,7 @@
               class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
               :class="targets.leakDetection
                 ? 'bg-[#529B26] border-[#529B26]'
-                : 'bg-transparent border-[#5D5D5D] group-hover:border-[#529B26]'"
-              @click="targets.leakDetection = !targets.leakDetection"
+                : 'bg-transparent border-[#529B26]'"
             >
               <svg v-if="targets.leakDetection" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
@@ -58,8 +56,8 @@
           <div class="h-px bg-white/5"/>
 
           <!-- Meter Anomalies -->
-          <label class="flex items-center justify-between py-2 cursor-pointer group">
-            <span class="text-white font-montserrat font-normal text-sm group-hover:text-[#5DB22A] transition-colors">
+          <label class="flex items-center justify-between py-2 cursor-pointer">
+            <span class="text-white font-montserrat font-normal text-sm transition-colors">
               Meter Anomalies:
             </span>
             <input type="checkbox" v-model="targets.meterAnomalies" class="hidden"/>
@@ -67,8 +65,7 @@
               class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
               :class="targets.meterAnomalies
                 ? 'bg-[#529B26] border-[#529B26]'
-                : 'bg-transparent border-[#5D5D5D] group-hover:border-[#529B26]'"
-              @click="targets.meterAnomalies = !targets.meterAnomalies"
+                : 'bg-transparent border-[#529B26]'"
             >
               <svg v-if="targets.meterAnomalies" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
@@ -114,37 +111,34 @@
           <!-- Resource Usage -->
           <div class="flex items-center justify-between py-2">
             <span class="text-white font-montserrat font-normal text-sm">Resource Usage:</span>
-            <BaseSelect 
-              v-model="config.resourceUsage"
-              :options="resourceOptions"
-              class="w-[120px]"
-            />
+            <div class="w-[150px]">
+              <BaseSelect 
+                v-model="config.resourceUsage"
+                :options="resourceOptions"
+              />
+            </div>
           </div>
           <div class="h-px bg-white/5"/>
 
           <!-- Start Date -->
           <div class="flex items-center justify-between py-2">
             <span class="text-white font-montserrat font-normal text-sm">Start Date:</span>
-            <input
-              type="date"
-              v-model="config.startDate"
-              class="bg-[#1a1a1a] border border-[#5D5D5D] text-white font-montserrat text-xs rounded-lg
-                     px-2 py-1 focus:outline-none focus:border-[#529B26] cursor-pointer transition-colors
-                     [color-scheme:dark]"
-            />
+            <div class="w-[150px]">
+              <BaseDatePicker
+                v-model="config.startDate"
+              />
+            </div>
           </div>
           <div class="h-px bg-white/5"/>
 
           <!-- End Date -->
           <div class="flex items-center justify-between py-2">
             <span class="text-white font-montserrat font-normal text-sm">End Date:</span>
-            <input
-              type="date"
-              v-model="config.endDate"
-              class="bg-[#1a1a1a] border border-[#5D5D5D] text-white font-montserrat text-xs rounded-lg
-                     px-2 py-1 focus:outline-none focus:border-[#529B26] cursor-pointer transition-colors
-                     [color-scheme:dark]"
-            />
+            <div class="w-[150px]">
+              <BaseDatePicker
+                v-model="config.endDate"
+              />
+            </div>
           </div>
         </div>
 
@@ -223,6 +217,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
+import BaseDatePicker from '@/components/common/BaseDatePicker.vue'
 
 interface AnalysisTargets {
   hydraulics: boolean

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-1">
+  <div class="flex flex-col gap-1 w-full">
     <!-- File list (shown when files are added) -->
     <div v-if="files.length > 0" class="flex flex-col gap-1 mb-1">
       <div
@@ -14,7 +14,7 @@
           <span class="text-[#bebebe] text-xs truncate font-inter">{{ getFileName(file.name) }}</span>
         </div>
         <button
-          @click="removeFile(index)"
+          @click.stop="removeFile(index)"
           class="text-[#5D5D5D] hover:text-red-400 transition-colors ml-2 flex-shrink-0"
           title="Remove"
         >
@@ -27,33 +27,36 @@
 
     <!-- Drop Zone -->
     <div
-      class="relative rounded-[10px] transition-colors duration-200 cursor-pointer"
+      class="relative rounded-[10px] transition-colors duration-200 cursor-pointer overflow-hidden group"
       :class="[
         files.length > 0 ? 'h-20' : 'h-[120px]',
-        isDraggingOver ? 'bg-white/10' : 'bg-transparent',
+        isDraggingOver ? 'bg-white/10' : 'bg-[#5D5D5D] hover:bg-white/5',
       ]"
       @dragover.prevent="isDraggingOver = true"
       @dragleave.prevent="isDraggingOver = false"
       @drop.prevent="handleDrop"
       @click="openFilePicker"
     >
-      <!-- Dashed border drawn with inline SVG pattern via CSS border-dashed -->
+      <!-- Dashed border drawn with CSS border-dashed -->
       <div
-        class="absolute inset-0 rounded-[10px] border border-dashed border-[#5D5D5D]"
-        :class="{ 'border-[#5DB22A]/60': isDraggingOver }"
+        class="absolute inset-0 rounded-[10px] border border-dashed border-[#5D5D5D] pointer-events-none transition-colors"
+        :class="{ 'border-[#5DB22A]/60': isDraggingOver, 'group-hover:border-[#529B26]': !isDraggingOver }"
       />
+      
       <div class="relative h-full flex flex-col items-center justify-center gap-2 p-3">
-        <svg
-          class="transition-colors duration-200"
-          :class="isDraggingOver ? 'text-[#5DB22A]' : 'text-[#5D5D5D]'"
-          width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-        </svg>
-        <p class="text-white text-xs font-inter text-center leading-snug">
-          Drag &amp; Drop or <span class="text-[#5DB22A] font-medium">click</span> to select files
+        <slot name="icon">
+           <svg
+             class="transition-colors duration-200"
+             :class="isDraggingOver ? 'text-[#5DB22A]' : 'text-[#5D5D5D] group-hover:text-white'"
+             width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+           >
+             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+           </svg>
+        </slot>
+        <p class="text-[#A7A7A7] group-hover:text-white text-xs font-inter text-center leading-snug transition-colors">
+          Drag &amp; Drop or <span class="text-[#5DB22A] font-medium">click</span> to select file(s)
         </p>
-        <p class="text-[#5D5D5D] text-[10px] font-inter">Accepted: .csv, .shp, .tif, .txt</p>
+        <p class="text-[#5D5D5D] text-[10px] font-inter">{{ hint }}</p>
       </div>
     </div>
 
@@ -62,7 +65,7 @@
       ref="fileInputRef"
       type="file"
       multiple
-      accept=".csv,.shp,.tif,.txt"
+      :accept="accept"
       class="hidden"
       @change="handleFileInputChange"
     />
@@ -77,6 +80,16 @@ interface FileData {
   size: number
   file: File
 }
+
+interface Props {
+  accept?: string
+  hint?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  accept: '.csv,.shp,.tif,.txt',
+  hint: 'Accepted: .csv, .shp, .tif, .txt'
+})
 
 const emit = defineEmits<{
   'update:files': [files: FileData[]]

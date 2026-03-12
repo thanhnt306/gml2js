@@ -44,7 +44,7 @@
                 @toggle="toggleTab('operation')"
               >
                  <!-- Operational Data Wizard Container -->
-                 <div class="w-full bg-[#151515] rounded-lg p-4">
+                 <div class="w-full bg-transparent rounded-lg p-4">
                     <OperationalDataImport />
                  </div>
               </ContentTabItem>

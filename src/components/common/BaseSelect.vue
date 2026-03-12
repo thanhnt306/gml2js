@@ -3,7 +3,7 @@
     <!-- Select Trigger -->
     <button
       type="button"
-      @click="isOpen = !isOpen"
+      @click.stop="toggle"
       class="w-full flex items-center justify-between bg-[#6D6D6D] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 outline-none focus:border-[#529B26] transition-colors"
       :class="{ 'border-[#529B26]': isOpen }"
     >
@@ -15,29 +15,33 @@
       />
     </button>
 
-    <!-- Options Dropdown -->
-    <div
-      v-if="isOpen"
-      class="absolute z-50 w-full mt-1 bg-[#6D6D6D] border border-[#5D5D5D] rounded shadow-xl overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar"
-    >
+    <!-- Options Dropdown Teleported -->
+    <Teleport to="body">
       <div
-        v-for="option in options"
-        :key="getOptionValue(option)"
-        @click="selectOption(option)"
-        class="px-3 py-2 text-sm text-white cursor-pointer transition-colors"
-        :class="[
-          isSelected(option) ? 'bg-[#529B26]/60' : 'hover:bg-[#529B26]/30',
-          'hover:text-white'
-        ]"
+        v-if="isOpen"
+        ref="dropdownRef"
+        class="fixed z-[9999] bg-[#6D6D6D] border border-[#5D5D5D] rounded shadow-xl overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar"
+        :style="dropdownStyle"
       >
-        {{ getOptionLabel(option) }}
+        <div
+          v-for="option in options"
+          :key="getOptionValue(option)"
+          @click.stop="selectOption(option)"
+          class="px-3 py-2 text-sm text-white cursor-pointer transition-colors"
+          :class="[
+            isSelected(option) ? 'bg-[#529B26]/60' : 'hover:bg-[#529B26]/30',
+            'hover:text-white'
+          ]"
+        >
+          {{ getOptionLabel(option) }}
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 
 interface Props {
   modelValue: any
@@ -55,6 +59,26 @@ const emit = defineEmits(['update:modelValue'])
 
 const isOpen = ref(false)
 const selectRef = ref<HTMLElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
+const dropdownStyle = ref({})
+
+const updatePosition = () => {
+  if (!selectRef.value || !isOpen.value) return
+  const rect = selectRef.value.getBoundingClientRect()
+  dropdownStyle.value = {
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`
+  }
+}
+
+const toggle = async () => {
+  isOpen.value = !isOpen.value
+  if (isOpen.value) {
+    await nextTick()
+    updatePosition()
+  }
+}
 
 const getOptionLabel = (option: any) => {
   if (typeof option === 'string') return option
@@ -81,17 +105,32 @@ const selectOption = (option: any) => {
 }
 
 const handleClickOutside = (event: MouseEvent) => {
-  if (selectRef.value && !selectRef.value.contains(event.target as Node)) {
+  const target = event.target as Node
+  const isClickInSelect = selectRef.value?.contains(target)
+  const isClickInDropdown = dropdownRef.value?.contains(target)
+  if (!isClickInSelect && !isClickInDropdown) {
+    isOpen.value = false
+  }
+}
+
+const handleScroll = (event: Event) => {
+  if (isOpen.value && dropdownRef.value) {
+    // If the scroll event originates from inside the dropdown, don't close it
+    if (dropdownRef.value.contains(event.target as Node)) {
+      return
+    }
     isOpen.value = false
   }
 }
 
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
+  window.addEventListener('scroll', handleScroll, true)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleClickOutside)
+  window.removeEventListener('scroll', handleScroll, true)
 })
 </script>
 
