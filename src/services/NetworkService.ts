@@ -3,6 +3,7 @@ import api from './api';
 export interface UploadGisResponse {
   success: boolean;
   message: string;
+  attributes?: Record<string, string[]>;
 }
 
 class NetworkService {
@@ -24,6 +25,9 @@ class NetworkService {
           'Content-Type': 'multipart/form-data',
         },
       });
+      if (response.data.attributes) {
+        console.log('Received GIS attributes:', response.data.attributes);
+      }
       return response.data;
     } catch (error) {
       console.error('Error uploading GIS files:', error);
