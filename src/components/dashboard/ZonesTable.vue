@@ -96,6 +96,7 @@ const columns: Column[] = [
 ]
 
 interface ZoneItem {
+  id: string
   zoneName: { text: string; bold: boolean; color: string }
   description: { text: string; color: string }
   favorite: boolean
@@ -104,12 +105,14 @@ interface ZoneItem {
 
 const items = ref<ZoneItem[]>([
     { 
+        id: "1",
         zoneName: { text: "Example Project 1", bold: true, color: "#A7A7A7" }, 
         description: { text: "Description for Project 1", color: "#A7A7A7" },
         favorite: true, 
         moreAction: "..."
     },
     { 
+        id: "2",
         zoneName: { text: "Example Project 2", bold: true, color: "#A7A7A7" }, 
         description: { text: "Description for Project 2", color: "#A7A7A7" },
         favorite: false,

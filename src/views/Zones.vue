@@ -27,7 +27,7 @@ const selectedZoneId = ref<any>(null)
 const route = useRoute()
 
 const handleOpenZone = (item: any): void => {
-    selectedZoneId.value = item // or item.id if available
+    selectedZoneId.value = item.id || item
     currentView.value = 'detail'
 }
 

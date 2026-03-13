@@ -23,10 +23,10 @@
              <div class="flex justify-end">
                 <button 
                   @click="handleAddElev"
-                  :disabled="elevFiles.length === 0"
+                  :disabled="elevFiles.length === 0 || isUploadingElev"
                   class="bg-[#529B26] hover:bg-[#6cc537] text-white px-6 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  Add
+                  {{ isUploadingElev ? 'Uploading...' : 'Add' }}
                 </button>
             </div>
         </div>
@@ -40,8 +40,9 @@
 
             <ImportFileItem
               ref="networkFileRef"
-              accept=".shp,.csv"
-              hint="Click to upload .shp, .csv"
+              accept=".shp,.csv,.dbf,.prj,.shx,.cpg,.sbn,.sbx"
+              hint="Click to upload .shp, .csv and related files"
+              groupByExtension
               @update:files="networkFiles = $event"
             >
               <template #icon>
@@ -52,10 +53,10 @@
              <div class="flex justify-end">
                 <button 
                   @click="handleAddGiz"
-                  :disabled="networkFiles.length === 0"
+                  :disabled="networkFiles.length === 0 || isUploadingGiz"
                   class="bg-[#529B26] hover:bg-[#6cc537] text-white px-6 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  Add
+                  {{ isUploadingGiz ? 'Uploading...' : 'Add' }}
                 </button>
             </div>
         </div>
@@ -66,22 +67,65 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import ImportFileItem from '@/components/common/ImportFileItem.vue'
+import NetworkService from '@/services/NetworkService'
+
+const props = defineProps<{
+  zoneId?: string
+}>()
 
 const emit = defineEmits<{
   (e: 'next'): void
 }>()
 
+const route = useRoute()
+const zoneId = props.zoneId || route.params.id as string
+
 const elevFiles = ref<any[]>([])
 const networkFiles = ref<any[]>([])
+const isUploadingElev = ref(false)
+const isUploadingGiz = ref(false)
 
-const handleAddElev = () => {
-    console.log('Adding Elevation File:', elevFiles.value)
+const elevFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
+const networkFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
+
+const handleAddElev = async () => {
+    if (elevFiles.value.length === 0) return
+    
+    isUploadingElev.value = true
+    try {
+        const file = elevFiles.value[0].file
+        await NetworkService.uploadElevationFile(zoneId, file)
+        console.log('Elevation file uploaded successfully')
+        elevFileRef.value?.clear()
+        // Optional: emit next or show success
+    } catch (error) {
+        console.error('Failed to upload elevation file:', error)
+        alert('Failed to upload elevation file. Please try again.')
+    } finally {
+        isUploadingElev.value = false
+    }
 }
 
-const handleAddGiz = () => {
-    console.log('Adding GIS File:', networkFiles.value)
-    // Assuming adding GIS file completes this step as per QML flow logic roughly
-    emit('next') 
+const handleAddGiz = async () => {
+    if (networkFiles.value.length === 0) return
+
+    isUploadingGiz.value = true
+    try {
+        const files = networkFiles.value.map(f => f.file)
+        await NetworkService.uploadGisFiles(zoneId, files)
+        console.log('GIS files uploaded successfully')
+        
+        networkFileRef.value?.clear()
+        
+        // Giả sử sau khi upload xong file GIS thì chuyển sang bước tiếp theo
+        emit('next')
+    } catch (error) {
+        console.error('Failed to upload GIS files:', error)
+        alert('Failed to upload GIS files. Please try again.')
+    } finally {
+        isUploadingGiz.value = false
+    }
 }
 </script>

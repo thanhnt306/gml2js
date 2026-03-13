@@ -32,7 +32,7 @@
               >
                  <!-- Network Wizard Container -->
                  <div class="w-full bg-[#4B4B4B] rounded-lg p-4 min-h-[500px]">
-                    <NetworkSetupWizard />
+                    <NetworkSetupWizard :zoneId="String(props.zoneId?.id || props.zoneId || '')" />
                  </div>
               </ContentTabItem>
 
@@ -88,6 +88,10 @@ import OperationalDataImport from '@/components/zones/operation/OperationalDataI
 import AnalysisSetting from '@/components/zones/analysis/AnalysisSetting.vue'
 import AnomalyReport from '@/components/zones/anomaly/AnomalyReport.vue'
 
+const props = defineProps<{
+    zoneId?: any
+}>()
+
 type TabName = 'network' | 'operation' | 'analysis' | 'anomaly'
 
 const route = useRoute()
@@ -113,7 +117,7 @@ const toggleTab = (tab: TabName): void => {
 
 onMounted(() => {
     // Mock fetching zone data by ID
-    const id = route.params.id
+    const id = props.zoneId?.id || props.zoneId || route.params.id
     zoneName.value = `Example Project ${id}` 
 })
 </script>

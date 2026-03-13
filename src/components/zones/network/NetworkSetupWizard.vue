@@ -29,8 +29,9 @@
                 :isExpanded="currentStep === 2"
                 @toggle="toggleStep(2)"
               >
-                  <AddNetworkFiles @next="goToStep(3)" />
+                  <AddNetworkFiles :zoneId="props.zoneId" @next="goToStep(3)" />
               </StepItem>
+
 
               <!-- Step 3: Choose Inlet Node -->
               <StepItem 
@@ -65,6 +66,10 @@ import DisplayConfiguration from './steps/DisplayConfiguration.vue'
 import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
+
+const props = defineProps<{
+    zoneId?: string
+}>()
 
 const currentStep = ref(1)
 
