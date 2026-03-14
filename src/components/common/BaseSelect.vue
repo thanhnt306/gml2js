@@ -4,8 +4,12 @@
     <button
       type="button"
       @click.stop="toggle"
+      :disabled="disabled"
       class="w-full flex items-center justify-between bg-[#6D6D6D] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 outline-none focus:border-[#529B26] transition-colors"
-      :class="{ 'border-[#529B26]': isOpen }"
+      :class="{ 
+        'border-[#529B26]': isOpen,
+        'opacity-50 cursor-not-allowed': disabled
+      }"
     >
       <span class="truncate">{{ selectedLabel }}</span>
       <img 
@@ -49,10 +53,12 @@ interface Props {
   labelKey?: string
   valueKey?: string
   placeholder?: string
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: 'Select option'
+  placeholder: 'Select option',
+  disabled: false
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -73,6 +79,7 @@ const updatePosition = () => {
 }
 
 const toggle = async () => {
+  if (props.disabled) return
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     await nextTick()
@@ -82,12 +89,12 @@ const toggle = async () => {
 
 const getOptionLabel = (option: any) => {
   if (typeof option === 'string') return option
-  return props.labelKey ? option[props.labelKey] : option.label || option
+  return props.labelKey ? option[props.labelKey] : (option.label ?? option)
 }
 
 const getOptionValue = (option: any) => {
   if (typeof option === 'string') return option
-  return props.valueKey ? option[props.valueKey] : option.value || option
+  return props.valueKey ? option[props.valueKey] : (option.value ?? option)
 }
 
 const selectedLabel = computed(() => {

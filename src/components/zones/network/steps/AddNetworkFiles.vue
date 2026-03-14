@@ -13,6 +13,7 @@
               ref="elevFileRef"
               accept=".tif"
               hint="Click to upload .tif"
+              :files="elevFiles"
               @update:files="elevFiles = $event"
             >
               <template #icon>
@@ -43,6 +44,7 @@
               accept=".shp,.csv,.dbf,.prj,.shx,.cpg,.sbn,.sbx"
               hint="Click to upload .shp, .csv and related files"
               groupByExtension
+              :files="networkFiles"
               @update:files="networkFiles = $event"
             >
               <template #icon>
@@ -60,8 +62,15 @@
                 </button>
             </div>
         </div>
-
     </div>
+
+    <!-- Role Selection Dialog -->
+    <NetworkInfoSelectionDialog 
+      :show="showRoleDialog"
+      :attributes="serverAttributes"
+      @save="handleSaveRoles"
+      @cancel="handleCancelRoles"
+    />
   </div>
 </template>
 
@@ -69,6 +78,7 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ImportFileItem from '@/components/common/ImportFileItem.vue'
+import NetworkInfoSelectionDialog from '../dialogs/NetworkInfoSelectionDialog.vue'
 import NetworkService from '@/services/NetworkService'
 
 const props = defineProps<{
@@ -86,6 +96,8 @@ const elevFiles = ref<any[]>([])
 const networkFiles = ref<any[]>([])
 const isUploadingElev = ref(false)
 const isUploadingGiz = ref(false)
+const showRoleDialog = ref(false)
+const serverAttributes = ref<Record<string, string[]>>({})
 
 const elevFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
 const networkFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
@@ -98,6 +110,7 @@ const handleAddElev = async () => {
         const file = elevFiles.value[0].file
         await NetworkService.uploadElevationFile(zoneId, file)
         console.log('Elevation file uploaded successfully')
+        // Only clear after we are sure everything is done or if it's a simple upload
         elevFileRef.value?.clear()
         // Optional: emit next or show success
     } catch (error) {
@@ -114,16 +127,53 @@ const handleAddGiz = async () => {
     isUploadingGiz.value = true
     try {
         const files = networkFiles.value.map(f => f.file)
-        await NetworkService.uploadGisFiles(zoneId, files)
-        console.log('GIS files uploaded successfully')
+        console.log('Final file list being sent:', files.map(f => f.name))
+        const response = await NetworkService.uploadGisFiles(zoneId, files)
+        console.log('GIS files uploaded successfully:', response)
         
-        networkFileRef.value?.clear()
-        
-        // Giả sử sau khi upload xong file GIS thì chuyển sang bước tiếp theo
-        emit('next')
+        if (response.attributes && Object.keys(response.attributes).length > 0) {
+            serverAttributes.value = response.attributes
+            showRoleDialog.value = true
+        } else {
+            // Nếu không có attributes (trường hợp hiếm), chuyển luôn sang bước tiếp theo
+            emit('next')
+        }
     } catch (error) {
         console.error('Failed to upload GIS files:', error)
         alert('Failed to upload GIS files. Please try again.')
+        // If upload fails, maybe we also want to clear? 
+        // User didn't specify, but usually better to stay so they can retry.
+    } finally {
+        isUploadingGiz.value = false
+    }
+}
+
+const handleCancelRoles = () => {
+    showRoleDialog.value = false
+    // Clear everything to reset for next time
+    clearGisData()
+}
+
+const clearGisData = () => {
+    networkFiles.value = []
+    serverAttributes.value = {}
+    networkFileRef.value?.clear()
+}
+
+const handleSaveRoles = async (rolesConfig: any) => {
+    isUploadingGiz.value = true // Show loading while saving roles
+    try {
+        await NetworkService.saveNetworkRoles(zoneId, rolesConfig)
+        console.log('Network roles saved successfully')
+        
+        // Final clear after everything is successful
+        clearGisData()
+        
+        showRoleDialog.value = false
+        emit('next')
+    } catch (error) {
+        console.error('Failed to save network roles:', error)
+        alert('Failed to save network configuration. Please try again.')
     } finally {
         isUploadingGiz.value = false
     }

@@ -19,18 +19,30 @@ class NetworkService {
     });
 
     try {
-      console.log('Uploading GIS files for zone:', zoneId);
       const response = await api.post(`/gis/zones/${zoneId}/network/upload-gis`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      if (response.data.attributes) {
-        console.log('Received GIS attributes:', response.data.attributes);
-      }
       return response.data;
     } catch (error) {
       console.error('Error uploading GIS files:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Saves assigned roles for GIS files and their attributes.
+   * @param zoneId The ID of the zone
+   * @param roles Data object containing role assignments
+   */
+  async saveNetworkRoles(zoneId: string, roles: any): Promise<UploadGisResponse> {
+    try {
+      console.log('Saving network roles:', roles);
+      const response = await api.post(`/gis/zones/${zoneId}/network/save-roles`, roles);
+      return response.data;
+    } catch (error) {
+      console.error('Error saving network roles:', error);
       throw error;
     }
   }

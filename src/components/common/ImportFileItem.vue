@@ -97,12 +97,14 @@ interface Props {
   accept?: string
   hint?: string
   groupByExtension?: boolean
+  files?: FileData[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   accept: '.csv,.shp,.tif,.txt',
   hint: 'Accepted: .csv, .shp, .tif, .txt',
-  groupByExtension: false
+  groupByExtension: false,
+  files: () => []
 })
 
 const emit = defineEmits<{
@@ -112,6 +114,12 @@ const emit = defineEmits<{
 const files = ref<FileData[]>([])
 const isDraggingOver = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// Sync internal files with prop
+import { watch } from 'vue'
+watch(() => props.files, (newVal) => {
+  files.value = newVal ? [...newVal] : []
+}, { immediate: true, deep: true })
 
 const displayFiles = computed<DisplayFileGroup[]>(() => {
   if (!props.groupByExtension) {
@@ -165,7 +173,7 @@ const addFiles = (newFiles: File[]): void => {
       files.value.push({ name: file.name, size: file.size, file })
     }
   }
-  emit('update:files', files.value)
+  emit('update:files', [...files.value])
 }
 
 const removeGroup = (group: DisplayFileGroup): void => {
@@ -174,7 +182,7 @@ const removeGroup = (group: DisplayFileGroup): void => {
   sortedIndices.forEach(idx => {
     files.value.splice(idx, 1)
   })
-  emit('update:files', files.value)
+  emit('update:files', [...files.value])
 }
 
 const handleDrop = (event: DragEvent): void => {
