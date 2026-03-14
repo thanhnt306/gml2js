@@ -65,6 +65,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import NavButton from './NavButton.vue'
 
 // ... imports
@@ -74,6 +75,7 @@ import expandRight from '@/assets/images/expand_24x24.png'
 const isCollapsed = ref(false)
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const currentRoute = computed(() => route.path)
 
@@ -92,8 +94,14 @@ const menuItems: MenuItem[] = [
   { name: 'map', label: 'Map', route: '/app/map', icon: 'map_unpressed_26x26.svg', iconActive: 'map_pressed_26x26.svg' }
 ]
 
-const logout = (): void => {
-    // TODO: Implement logout logic
-    router.push('/login')
+const logout = async (): Promise<void> => {
+    try {
+        await authStore.logout()
+        router.push('/login')
+    } catch (error) {
+        console.error('Logout failed:', error)
+        // Even if the API call fails, we still want to redirect to login
+        router.push('/login')
+    }
 }
 </script>
