@@ -42,8 +42,9 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // If error is 401 (Unauthorized) and we haven't already retried
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // If error is 401 (Unauthorized), we haven't already retried, 
+        // AND it's not the refresh request itself (to avoid infinite loops)
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
             originalRequest._retry = true;
 
             const authStore = useAuthStore();

@@ -62,13 +62,17 @@ router.beforeEach(async (to, _from, next) => {
         // If we don't have an access token in memory
         if (!authStore.accessToken) {
             try {
+                console.log('No access token, attempting refresh...')
                 // Try to refresh the token using the HttpOnly cookie
                 await authStore.refresh()
+                console.log('Refresh successful, fetching user...')
                 // If successful, we can also fetch the user profile if needed here, 
                 // or let the components handle it. Let's fetch it to be safe.
                 await authStore.fetchUser()
+                console.log('Auth check complete, proceeding.')
                 next()
             } catch (error) {
+                console.warn('Auth check failed:', error)
                 // Refresh failed (no cookie, expired, etc.), must login
                 next({ name: 'login' })
             }
