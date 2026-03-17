@@ -87,5 +87,25 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser };
+    const register = async (userData: any): Promise<boolean> => {
+        try {
+            await api.post('/auth/register', userData);
+            return true;
+        } catch (error) {
+            console.error('Registration failed:', error);
+            return false;
+        }
+    };
+
+    const activateLicense = async (licenseKey: string): Promise<boolean> => {
+        try {
+            await api.post('/auth/activate-license', { licenseKey });
+            return true;
+        } catch (error) {
+            console.error('License activation failed:', error);
+            return false;
+        }
+    };
+
+    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser, register, activateLicense };
 });

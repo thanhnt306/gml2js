@@ -132,7 +132,6 @@
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import UserManager from '@/services/UserManager'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -222,17 +221,28 @@ const handleSubmit = async (): Promise<void> => {
       }
     } 
     else if (currentState.value === 'signUp') {
-      // Mock sign up
-      if (UserManager.isAccountExist(form.username)) {
-        alert('Account already exists')
-      } else {
+      const success = await authStore.register({
+        username: form.username,
+        password: form.password,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email
+      })
+      if (success) {
         alert('Sign up successful! Please sign in.')
         currentState.value = 'signIn'
+      } else {
+        alert('Registration failed. Username or email might already be in use.')
       }
     }
     else if (currentState.value === 'activateLicense') {
-      // Mock license activation
-      alert('License activated!')
+      const success = await authStore.activateLicense(form.licenseKey)
+      if (success) {
+        alert('License activated!')
+        currentState.value = 'signIn'
+      } else {
+        alert('Invalid or expired license key.')
+      }
     }
   } catch (error) {
     console.error('Form submit error:', error)
