@@ -1,88 +1,76 @@
 <template>
   <div class="flex flex-col h-full">
-    <!-- Table -->
-    <div class="flex-1 overflow-auto custom-scrollbar">
-      <table class="w-full border-collapse text-xs font-inter">
-        <thead class="sticky top-0 z-10 bg-[#5C5C5C]">
-          <tr>
-            <th
-              v-for="col in columns" :key="col.key"
-              class="px-3 py-3 text-center text-white font-montserrat font-medium border border-[#7A7A7A]/50 cursor-pointer hover:bg-white/10 select-none"
-              :style="col.widthClass ? { width: col.widthClass } : {}"
-              @click="col.sortable && toggleSort(col.key)"
-            >
-              <span class="flex items-center justify-center gap-1">
-                {{ col.label }}
-                <span v-if="col.sortable" class="text-[10px] text-[#A7A7A7]">
-                  {{ sortKey === col.key ? (sortAsc ? '▲' : '▼') : '⇅' }}
-                </span>
-              </span>
-            </th>
-            <th class="px-3 py-3 text-center text-white font-montserrat font-medium border border-[#7A7A7A]/50 w-28">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, i) in paginatedRows"
-            :key="i"
-            class="border-b border-[#7A7A7A]/30 hover:bg-white/5 transition-colors"
-            :class="selectedRow === i ? 'bg-white/10' : ''"
-            @click="selectedRow = i"
-          >
-            <!-- Location -->
-            <td class="px-2 py-2 border-r border-[#7A7A7A]/30">
-              <button
-                class="w-full text-center bg-[#959595] hover:bg-[#858585] text-black font-semibold font-inter text-xs px-2 py-1 rounded transition-colors truncate"
-                @dblclick="$emit('show-in-map', row.label)"
-                :title="row.label"
-              >{{ row.label }}</button>
-            </td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30 truncate" :title="String(row.start_node)">{{ row.start_node }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30 truncate" :title="String(row.stop_node)">{{ row.stop_node }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.length }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.diameter }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.material }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.status }}</td>
-            <!-- Actions -->
-            <td class="px-2 py-2 text-center border-r border-[#7A7A7A]/30">
-              <div class="flex items-center justify-center gap-1">
-                <button
-                  @click.stop="$emit('delete', row.label)"
-                  class="px-2 py-0.5 rounded text-white text-xs bg-[#CA6409] hover:bg-orange-500 transition-colors"
-                >Delete</button>
-                <button
-                  @click.stop="$emit('edit', row)"
-                  class="px-2 py-0.5 rounded text-white text-xs bg-[#529B26] hover:bg-[#6cc537] transition-colors"
-                >Edit</button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="paginatedRows.length === 0">
-            <td colspan="8" class="py-12 text-center text-[#5D5D5D] font-inter text-sm">No link data available.</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Table using FluTableView -->
+    <div class="flex-1 overflow-hidden">
+      <FluTableViewAny 
+        v-if="paginatedRows.length > 0"
+        :columns="displayColumns" 
+        :items="paginatedRows" 
+        theme="light"
+        striped
+        headerBgColor="#5D5D5D"
+        headerFlush
+        class="h-full bg-[#E5E5E5] rounded-[4px]"
+      >
+        <!-- Location slot with button style -->
+        <template #label="{ item }">
+          <button
+            class="w-[90%] text-center bg-[#B5B5B5] text-[#1A1A1A] font-inter text-[13px] px-2 py-[2px] rounded border border-[#A5A5A5] truncate focus:outline-none"
+            @dblclick="$emit('show-in-map', item.label)"
+            :title="item.label"
+          >{{ item.label }}</button>
+        </template>
+
+        <!-- Action slot for Delete/Edit -->
+        <template #action="{ item }">
+          <div class="flex items-center justify-center gap-2">
+            <button
+              @click.stop="$emit('delete', item.label)"
+              class="px-3 py-1 rounded text-white text-[13px] font-inter bg-[#E2741E] hover:bg-orange-500 transition-colors"
+            >Delete</button>
+            <button
+              @click.stop="$emit('edit', item)"
+              class="px-3 py-1 rounded text-white text-[13px] font-inter bg-[#529B26] hover:bg-[#6cc537] transition-colors"
+            >Edit</button>
+          </div>
+        </template>
+      </FluTableViewAny>
+
+      <div v-if="paginatedRows.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span class="text-[#5D5D5D] font-inter text-sm">No link data available.</span>
+      </div>
     </div>
 
     <!-- Pagination -->
-    <div class="flex-none bg-[#A5A5A5]/10 border-t border-[#7A7A7A]/30 px-4 py-2 flex items-center justify-center gap-2">
-      <button @click="goToPage(1)" :disabled="currentPage === 1" class="pagination-btn">«</button>
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-btn">‹</button>
+    <div class="flex-none pt-3 flex items-center justify-center gap-3 bg-transparent pb-1">
+      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="text-[#7A7A7A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </button>
       <button
         v-for="p in visiblePages"
         :key="p"
         @click="goToPage(p)"
-        class="pagination-btn"
-        :class="p === currentPage ? 'bg-[#529B26] text-white' : ''"
+        class="text-[13px] font-montserrat w-6 h-6 flex items-center justify-center rounded transition-colors"
+        :class="p === currentPage ? 'text-white font-bold' : 'text-[#7A7A7A] hover:text-white'"
       >{{ p }}</button>
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === pageCount" class="pagination-btn">›</button>
-      <button @click="goToPage(pageCount)" :disabled="currentPage === pageCount" class="pagination-btn">»</button>
+      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === pageCount" class="text-[#7A7A7A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import FluTableView from '../../../fluentui/FluTableView.vue'
+const FluTableViewAny = FluTableView as any
+
+interface TableColumn {
+  title: string
+  key: string
+  width?: string
+  align?: 'left' | 'center' | 'right'
+}
 
 export interface LinkRow {
   label: string
@@ -98,8 +86,17 @@ const props = withDefaults(defineProps<{
   rows?: LinkRow[]
   itemsPerPage?: number
 }>(), {
-  rows: () => [],
-  itemsPerPage: 100
+  rows: () => [
+    { label: 'P-001', start_node: 'J-1',   stop_node: 'J-2',   length: 125.5, diameter: 0.2, material: 'PVC',  status: 'Open' },
+    { label: 'P-002', start_node: 'J-2',   stop_node: 'J-3',   length: 88.0,  diameter: 0.15, material: 'Ductile Iron', status: 'Closed' },
+    { label: 'P-003', start_node: 'J-3',   stop_node: 'J-4',   length: 210.2, diameter: 0.25, material: 'HDPE', status: 'Open' },
+    { label: 'P-004', start_node: 'J-4',   stop_node: 'J-5',   length: 45.3,  diameter: 0.1,  material: 'Steel', status: 'Open' },
+    { label: 'P-005', start_node: 'J-5',   stop_node: 'RES-1', length: 300.0, diameter: 0.4,  material: 'Cast Iron', status: 'Open' },
+    { label: 'P-006', start_node: 'J-1',   stop_node: 'J-6',   length: 154.8, diameter: 0.2,  material: 'PVC', status: 'Open' },
+    { label: 'P-007', start_node: 'J-6',   stop_node: 'J-7',   length: 92.1,  diameter: 0.15, material: 'HDPE', status: 'Open' },
+    { label: 'P-008', start_node: 'J-7',   stop_node: 'J-8',   length: 112.5, diameter: 0.2,  material: 'PVC', status: 'Closed' },
+  ],
+  itemsPerPage: 10
 })
 
 defineEmits<{
@@ -108,25 +105,20 @@ defineEmits<{
   'delete': [label: string]
 }>()
 
-const columns = [
-  { key: 'label',    label: 'Location',     sortable: true,  widthClass: '14%' },
-  { key: 'start_node', label: 'Start Node', sortable: true,  widthClass: '12%' },
-  { key: 'stop_node',  label: 'Stop Node',  sortable: true,  widthClass: '12%' },
-  { key: 'length',   label: 'Length (m)',   sortable: true,  widthClass: '10%' },
-  { key: 'diameter', label: 'Diameter (m)', sortable: true,  widthClass: '9%'  },
-  { key: 'material', label: 'Material',     sortable: true,  widthClass: '9%'  },
-  { key: 'status',   label: 'Status',       sortable: false, widthClass: '22%' },
+const displayColumns: TableColumn[] = [
+  { key: 'label',    title: 'Location',     width: '16%', align: 'center' },
+  { key: 'start_node', title: 'Start Node', width: '13%', align: 'center' },
+  { key: 'stop_node',  title: 'Stop Node',  width: '13%', align: 'center' },
+  { key: 'length',   title: 'Length(m)',   width: '9%', align: 'center' },
+  { key: 'diameter', title: 'Diameter(mm)', width: '10%', align: 'center' },
+  { key: 'material', title: 'Material',     width: '10%', align: 'center' },
+  { key: 'status',   title: 'Status',       width: '17%', align: 'center' },
+  { key: 'action',   title: 'Action',       width: '12%', align: 'center' }
 ]
 
 const currentPage = ref(1)
-const selectedRow = ref(-1)
 const sortKey = ref('')
 const sortAsc = ref(true)
-
-const toggleSort = (key: string) => {
-  if (sortKey.value === key) sortAsc.value = !sortAsc.value
-  else { sortKey.value = key; sortAsc.value = true }
-}
 
 const sortedRows = computed(() => {
   if (!sortKey.value) return props.rows

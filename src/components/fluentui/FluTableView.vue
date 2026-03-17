@@ -1,46 +1,64 @@
 <template>
-  <div class="w-full h-full flex flex-col pt-2 bg-transparent">
+  <div class="w-full flex-1 flex flex-col min-h-0 bg-transparent">
     <!-- Header Row -->
-    <div v-if="showHeader" class="flex w-full mb-[7px] bg-[#202020] rounded-[8px] h-[32px] items-center">
+    <div v-if="showHeader" class="flex w-full h-[36px] items-center shrink-0" 
+         :class="headerFlush ? 'mb-0 rounded-t-[4px] rounded-b-none' : 'mb-[7px] rounded-[4px]'"
+         :style="{ backgroundColor: headerBgColor || '#202020' }">
       <div 
         v-for="(col, index) in columns" 
         :key="index"
-        class="px-1 text-white font-montserrat font-bold text-sm text-center flex items-center justify-center h-full"
+        class="px-3 text-white font-montserrat font-bold text-sm flex items-center h-full"
+        :class="[
+          col.align === 'left' ? 'justify-start' : col.align === 'right' ? 'justify-end' : 'justify-center'
+        ]"
         :style="{ width: col.width ? col.width : (100 / columns.length) + '%' }"
       >
-        {{ col.title }}
+        <template v-if="$slots[col.key + '-header']">
+          <slot :name="col.key + '-header'" :column="col"></slot>
+        </template>
+        <template v-else>
+          {{ col.title }}
+        </template>
       </div>
     </div>
     
     <!-- Data Rows -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col space-y-[7px]">
+    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-2" :class="striped ? '' : 'space-y-[7px]'">
        <div 
          v-for="(item, rowIndex) in items" 
          :key="rowIndex"
-         class="flex w-full h-[40px] hover:bg-white/5 transition-colors duration-150 rounded-[8px] px-2 items-center border cursor-pointer"
-         :style="{ borderColor: borderColor || 'transparent' }"
+         class="flex w-full min-h-[44px] transition-colors duration-150 items-stretch"
+         :class="[
+            striped ? 'border-b border-[#8A8A8A]/50' : 'rounded-[8px] border hover:bg-white/5 cursor-pointer',
+            striped && theme === 'light' ? (rowIndex % 2 === 0 ? 'bg-[#BEBEBE]' : 'bg-[#D3D3D3]') : '',
+            striped && theme === 'dark' ? (rowIndex % 2 === 0 ? 'bg-white/5' : 'bg-transparent') : ''
+         ]"
+         :style="{ borderColor: borderColor || (striped ? '' : 'transparent') }"
          @click="$emit('row-click', item)"
        >
           <div 
             v-for="(col, colIndex) in columns" 
             :key="colIndex"
-            class="flex items-center justify-center py-2 px-1"
+            class="flex items-center py-2 px-3 overflow-hidden"
+            :class="[
+              col.align === 'left' ? 'justify-start text-left' : col.align === 'right' ? 'justify-end text-right' : 'justify-center text-center'
+            ]"
              :style="{ width: col.width ? col.width : (100 / columns.length) + '%' }"
           >
              <!-- Check if slot exists for this column -->
              <template v-if="$slots[col.key]">
-                <slot :name="col.key" :item="item" :row-index="rowIndex"></slot>
+                <slot :name="col.key" :item="item" :rowIndex="rowIndex" :column="col"></slot>
              </template>
              
              <!-- Default Text Rendering -->
              <template v-else>
                  <span 
-                    class="font-montserrat text-sm truncate"
+                    class="font-inter text-[13px] truncate w-full"
                     :class="[
                         getCellBold(item[col.key]) ? 'font-bold' : 'font-medium',
                         getCellClass(item[col.key])
                     ]"
-                    :style="{ color: getCellColor(item[col.key]) }"
+                    :style="{ color: getCellColor(item[col.key], theme) }"
                  >
                     {{ getCellText(item[col.key]) }}
                  </span>
@@ -52,27 +70,34 @@
 </template>
 
 <script setup lang="ts" generic="T extends Record<string, any>">
-interface Column {
+interface TableColumn {
   title: string
   key: string
   width?: string
+  align?: 'left' | 'center' | 'right'
 }
 
 const props = withDefaults(defineProps<{
-  columns: Column[]
+  columns: TableColumn[]
   items?: T[]
   showHeader?: boolean
   borderColor?: string | null
+  theme?: 'dark' | 'light' | 'transparent'
+  striped?: boolean
+  headerBgColor?: string
+  headerFlush?: boolean
 }>(), {
   items: () => [],
   showHeader: true,
-  borderColor: null
+  borderColor: null,
+  theme: 'transparent',
+  striped: false,
+  headerBgColor: '',
+  headerFlush: false
 })
 
-// Allow any slot name (dynamic columns) to provide item and rowIndex
-defineSlots<{
-  [key: string]: (props: { item: T, rowIndex: number }) => any
-}>()
+// Define slots to allow any column key as a slot name
+defineSlots<any>()
 
 // Helper to extract text from potential object structure
 const getCellText = (cellData: any) => {
@@ -82,11 +107,11 @@ const getCellText = (cellData: any) => {
     return cellData
 }
 
-const getCellColor = (cellData: any) => {
+const getCellColor = (cellData: any, themeStr: string) => {
     if (cellData && typeof cellData === 'object' && cellData.color) {
         return cellData.color
     }
-    return '#A7A7A7' // Default color
+    return themeStr === 'light' ? '#000000' : '#A7A7A7' // Default color
 }
 
 const getCellBold = (cellData: any) => {

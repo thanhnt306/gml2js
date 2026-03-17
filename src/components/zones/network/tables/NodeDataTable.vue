@@ -1,80 +1,70 @@
 <template>
   <div class="flex flex-col h-full">
-    <!-- Table -->
-    <div class="flex-1 overflow-auto custom-scrollbar">
-      <table class="w-full border-collapse text-xs font-inter">
-        <thead class="sticky top-0 z-10 bg-[#5C5C5C]">
-          <tr>
-            <th
-              v-for="col in columns" :key="col.key"
-              class="px-3 py-3 text-center text-white font-montserrat font-medium border border-[#7A7A7A]/50 cursor-pointer hover:bg-white/10 select-none"
-              :style="{ width: col.widthClass }"
-              @click="col.sortable && toggleSort(col.key)"
-            >
-              <span class="flex items-center justify-center gap-1">
-                {{ col.label }}
-                <span v-if="col.sortable" class="text-[10px] text-[#A7A7A7]">
-                  {{ sortKey === col.key ? (sortAsc ? '▲' : '▼') : '⇅' }}
-                </span>
-              </span>
-            </th>
-            <th class="px-3 py-3 text-center text-white font-montserrat font-medium border border-[#7A7A7A]/50 w-28">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(row, i) in paginatedRows"
-            :key="i"
-            class="border-b border-[#7A7A7A]/30 hover:bg-white/5 transition-colors"
-            :class="selectedRow === i ? 'bg-white/10' : ''"
-            @click="selectedRow = i"
-          >
-            <!-- Location -->
-            <td class="px-2 py-2 border-r border-[#7A7A7A]/30">
-              <button
-                class="w-full text-center bg-[#959595] hover:bg-[#858585] text-black font-semibold font-inter text-xs px-2 py-1 rounded transition-colors truncate"
-                @dblclick="$emit('show-in-map', row.label)"
-                :title="row.label"
-              >{{ row.label }}</button>
-            </td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.elevation }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.latitude }}</td>
-            <td class="px-2 py-2 text-center text-black border-r border-[#7A7A7A]/30">{{ row.longitude }}</td>
-            <td class="px-2 py-2 text-black border-r border-[#7A7A7A]/30 truncate max-w-0" :title="row.status">{{ row.status }}</td>
-            <!-- Actions -->
-            <td class="px-2 py-2 text-center border-r border-[#7A7A7A]/30">
-              <button
-                @click.stop="$emit('edit', row)"
-                class="px-2 py-0.5 rounded text-white text-xs bg-[#529B26] hover:bg-[#6cc537] transition-colors"
-              >Edit</button>
-            </td>
-          </tr>
-          <tr v-if="paginatedRows.length === 0">
-            <td colspan="6" class="py-12 text-center text-[#5D5D5D] font-inter text-sm">No node data available.</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Table using FluTableView -->
+    <div class="flex-1 overflow-hidden">
+      <FluTableViewAny 
+        v-if="paginatedRows.length > 0"
+        :columns="displayColumns" 
+        :items="paginatedRows" 
+        theme="light"
+        striped
+        headerBgColor="#5D5D5D"
+        headerFlush
+        class="h-full bg-[#E5E5E5] rounded-[4px]"
+      >
+        <!-- Location slot -->
+        <template #label="{ item }">
+          <button
+            class="w-[90%] text-center bg-[#B5B5B5] text-[#1A1A1A] font-inter text-[13px] px-2 py-[2px] rounded border border-[#A5A5A5] truncate focus:outline-none"
+            @dblclick="$emit('show-in-map', item.label)"
+            :title="item.label"
+          >{{ item.label }}</button>
+        </template>
+
+        <!-- Action slot -->
+        <template #action="{ item }">
+          <button
+            @click.stop="$emit('edit', item)"
+            class="px-5 py-1 rounded text-white text-[13px] font-inter bg-[#529B26] hover:bg-[#6cc537] transition-colors"
+          >Edit</button>
+        </template>
+      </FluTableViewAny>
+
+      <div v-if="paginatedRows.length === 0" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <span class="text-[#5D5D5D] font-inter text-sm">No node data available.</span>
+      </div>
     </div>
 
     <!-- Pagination -->
-    <div class="flex-none bg-[#A5A5A5]/10 border-t border-[#7A7A7A]/30 px-4 py-2 flex items-center justify-center gap-2">
-      <button @click="goToPage(1)" :disabled="currentPage === 1" class="pagination-btn">«</button>
-      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="pagination-btn">‹</button>
+    <div class="flex-none pt-3 flex items-center justify-center gap-3 bg-transparent pb-1">
+      <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" class="text-[#7A7A7A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </button>
       <button
         v-for="p in visiblePages"
         :key="p"
         @click="goToPage(p)"
-        class="pagination-btn"
-        :class="p === currentPage ? 'bg-[#529B26] text-white' : ''"
+        class="text-[13px] font-montserrat w-6 h-6 flex items-center justify-center rounded transition-colors"
+        :class="p === currentPage ? 'text-white font-bold' : 'text-[#7A7A7A] hover:text-white'"
       >{{ p }}</button>
-      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === pageCount" class="pagination-btn">›</button>
-      <button @click="goToPage(pageCount)" :disabled="currentPage === pageCount" class="pagination-btn">»</button>
+      <button @click="goToPage(currentPage + 1)" :disabled="currentPage === pageCount" class="text-[#7A7A7A] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import FluTableView from '../../../fluentui/FluTableView.vue'
+const FluTableViewAny = FluTableView as any
+
+interface TableColumn {
+  title: string
+  key: string
+  width?: string
+  align?: 'left' | 'center' | 'right'
+}
 
 export interface NodeRow {
   label: string
@@ -88,8 +78,17 @@ const props = withDefaults(defineProps<{
   rows?: NodeRow[]
   itemsPerPage?: number
 }>(), {
-  rows: () => [],
-  itemsPerPage: 100
+  rows: () => [
+    { label: 'J-1',   elevation: 45.2, latitude: 21.0285, longitude: 105.8542, status: 'Active' },
+    { label: 'J-2',   elevation: 44.8, latitude: 21.0290, longitude: 105.8550, status: 'Active' },
+    { label: 'J-3',   elevation: 46.1, latitude: 21.0295, longitude: 105.8560, status: 'Maintenance' },
+    { label: 'J-4',   elevation: 43.5, latitude: 21.0300, longitude: 105.8570, status: 'Active' },
+    { label: 'J-5',   elevation: 42.9, latitude: 21.0310, longitude: 105.8580, status: 'Active' },
+    { label: 'RES-1', elevation: 50.0, latitude: 21.0320, longitude: 105.8600, status: 'Active (Source)' },
+    { label: 'J-6',   elevation: 44.5, latitude: 21.0270, longitude: 105.8530, status: 'Inactive' },
+    { label: 'J-7',   elevation: 45.0, latitude: 21.0260, longitude: 105.8520, status: 'Active' },
+  ],
+  itemsPerPage: 10
 })
 
 defineEmits<{
@@ -97,23 +96,18 @@ defineEmits<{
   'edit': [row: NodeRow]
 }>()
 
-const columns = [
-  { key: 'label',     label: 'Location',   sortable: true,  widthClass: '15%' },
-  { key: 'elevation', label: 'Elev (m)',   sortable: true,  widthClass: '10%' },
-  { key: 'latitude',  label: 'Latitude',   sortable: true,  widthClass: '10%' },
-  { key: 'longitude', label: 'Longitude',  sortable: true,  widthClass: '10%' },
-  { key: 'status',    label: 'Status',     sortable: false, widthClass: '40%' },
+const displayColumns: TableColumn[] = [
+  { key: 'label',     title: 'Location',   width: '18%', align: 'center' },
+  { key: 'elevation', title: 'Elev(m)',    width: '12%', align: 'center' },
+  { key: 'latitude',  title: 'Latitude',   width: '12%', align: 'center' },
+  { key: 'longitude', title: 'Longitude',  width: '12%', align: 'center' },
+  { key: 'status',    title: 'Status',     width: '36%', align: 'left'   },
+  { key: 'action',    title: 'Action',     width: '10%', align: 'center' }
 ]
 
 const currentPage = ref(1)
-const selectedRow = ref(-1)
 const sortKey = ref('')
 const sortAsc = ref(true)
-
-const toggleSort = (key: string) => {
-  if (sortKey.value === key) sortAsc.value = !sortAsc.value
-  else { sortKey.value = key; sortAsc.value = true }
-}
 
 const sortedRows = computed(() => {
   if (!sortKey.value) return props.rows

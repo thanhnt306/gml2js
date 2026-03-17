@@ -145,15 +145,46 @@ const props = withDefaults(defineProps<{
   nodeRows?: NodeRow[]
   exportGroups?: AttributeGroup[]
 }>(), {
-  gisRows: () => [],
-  linkRows: () => [],
-  nodeRows: () => [],
+  gisRows: () => [
+    { issue: 'Point Outside Zone', description: 'Node J-12 is located outside the defined boundary of Zone 1.', severity: 'CRITICAL', related_obj_id: 'J-12' },
+    { issue: 'Disconnected Pipe',  description: 'Pipe P-45 has no downstream connection.', severity: 'IMPACTED', related_obj_id: 'P-45' },
+    { issue: 'Duplicate Node',    description: 'Nodes J-101 and J-102 have identical coordinates.', severity: 'IMPACTED', related_obj_id: 'J-101' },
+    { issue: 'Missing Elevation',  description: 'Junction J-88 has an elevation of 0, which may be incorrect.', severity: '', related_obj_id: 'J-88' },
+    { issue: 'Isolated Network',   description: 'A cluster of 5 nodes and 4 pipes is not connected to any reservoir.', severity: 'CRITICAL', related_obj_id: 'RES-1' },
+  ],
+  linkRows: () => [
+    { label: 'P-001', start_node: 'J-1',   stop_node: 'J-2',   length: 125.5, diameter: 0.2, material: 'PVC',  status: 'Open' },
+    { label: 'P-002', start_node: 'J-2',   stop_node: 'J-3',   length: 88.0,  diameter: 0.15, material: 'Ductile Iron', status: 'Closed' },
+    { label: 'P-003', start_node: 'J-3',   stop_node: 'J-4',   length: 210.2, diameter: 0.25, material: 'HDPE', status: 'Open' },
+    { label: 'P-004', start_node: 'J-4',   stop_node: 'J-5',   length: 45.3,  diameter: 0.1,  material: 'Steel', status: 'Open' },
+    { label: 'P-005', start_node: 'J-5',   stop_node: 'RES-1', length: 300.0, diameter: 0.4,  material: 'Cast Iron', status: 'Open' },
+    { label: 'P-006', start_node: 'J-1',   stop_node: 'J-6',   length: 154.8, diameter: 0.2,  material: 'PVC', status: 'Open' },
+    { label: 'P-007', start_node: 'J-6',   stop_node: 'J-7',   length: 92.1,  diameter: 0.15, material: 'HDPE', status: 'Open' },
+    { label: 'P-008', start_node: 'J-7',   stop_node: 'J-8',   length: 112.5, diameter: 0.2,  material: 'PVC', status: 'Closed' },
+  ],
+  nodeRows: () => [
+    { label: 'J-1',   elevation: 45.2, latitude: 21.0285, longitude: 105.8542, status: 'Active' },
+    { label: 'J-2',   elevation: 44.8, latitude: 21.0290, longitude: 105.8550, status: 'Active' },
+    { label: 'J-3',   elevation: 46.1, latitude: 21.0295, longitude: 105.8560, status: 'Maintenance' },
+    { label: 'J-4',   elevation: 43.5, latitude: 21.0300, longitude: 105.8570, status: 'Active' },
+    { label: 'J-5',   elevation: 42.9, latitude: 21.0310, longitude: 105.8580, status: 'Active' },
+    { label: 'RES-1', elevation: 50.0, latitude: 21.0320, longitude: 105.8600, status: 'Active (Source)' },
+    { label: 'J-6',   elevation: 44.5, latitude: 21.0270, longitude: 105.8530, status: 'Inactive' },
+    { label: 'J-7',   elevation: 45.0, latitude: 21.0260, longitude: 105.8520, status: 'Active' },
+  ],
   exportGroups: () => [
-    { label: 'Main Pipe',     attributes: [] },
-    { label: 'Lateral Pipe',  attributes: [] },
-    { label: 'Meter',         attributes: [] },
-    { label: 'Logger',        attributes: [] },
-    { label: 'Valve',         attributes: [] },
+    { label: 'Main Pipe',     attributes: [{name: 'OLDOFPIPE', selected: true}] },
+    { label: 'Lateral Pipe',  attributes: [{name: 'VATLIEU', selected: true}] },
+    { label: 'Meter',         attributes: [
+        {name: 'AUG_2023', selected: true}, {name: 'CODONGHO', selected: true}, {name: 'JUL_2023', selected: true}, {name: 'SEP_2023', selected: true}
+      ] },
+    { label: 'Logger',        attributes: [
+        {name: 'ApLuc', selected: true}, {name: 'Caretaker', selected: true}, {name: 'Channels', selected: true},
+        {name: 'CoDH', selected: true}, {name: 'CoVGA', selected: true}, {name: 'DVQL', selected: true},
+        {name: 'DiaChi', selected: true}, {name: 'GTAL', selected: true}, {name: 'GTLL', selected: true},
+        {name: 'GhiChu', selected: true}, {name: 'Hang', selected: true}
+      ] },
+    { label: 'Valve',         attributes: [{name: 'LOAIVAN2', selected: true}] },
     { label: 'Pump',          attributes: [] },
     { label: 'Tank',          attributes: [] },
   ]

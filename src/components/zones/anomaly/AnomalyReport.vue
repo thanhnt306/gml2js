@@ -135,83 +135,145 @@
     </div>
 
     <!-- ─── DATA TABLE ─── -->
-    <div class="flex-1 min-h-0 overflow-auto rounded-lg">
-      <table class="w-full text-left border-collapse min-w-[900px]">
-        <thead>
-          <tr class="bg-[#7A7A7A]/40 text-white font-montserrat font-semibold text-xs">
-            <th v-if="workOrderMode" class="px-2 py-3 text-center w-10">
-              <input type="checkbox" v-model="selectAll" @change="toggleSelectAll"
-                class="accent-[#529B26] cursor-pointer"/>
-            </th>
-            <th v-for="col in columns" :key="col.key"
-              class="px-3 py-3 text-center cursor-pointer hover:text-[#5DB22A] transition-colors select-none whitespace-nowrap"
-              @click="setSort(col.key)"
+    <div class="flex-1 min-h-0 overflow-hidden rounded-lg">
+      <FluTableViewAny
+        v-if="pagedRows.length > 0"
+        :columns="displayColumns"
+        :items="pagedRows"
+        class="h-full"
+      >
+        <!-- Checkbox Header -->
+        <template #checkbox-header>
+          <div class="flex justify-center items-center h-full">
+            <input 
+              type="checkbox" 
+              v-model="selectAll" 
+              @change="toggleSelectAll"
+              class="accent-[#529B26] cursor-pointer"
+            />
+          </div>
+        </template>
+
+        <!-- Sorting Headers -->
+        <template #detectionTime-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('detectionTime')">
+            {{ column.title }}
+            <span v-if="sortKey === 'detectionTime'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #location-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('location')">
+            {{ column.title }}
+            <span v-if="sortKey === 'location'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #systemAnomalyType-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('systemAnomalyType')">
+            {{ column.title }}
+            <span v-if="sortKey === 'systemAnomalyType'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #accuracy-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('accuracy')">
+            {{ column.title }}
+            <span v-if="sortKey === 'accuracy'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #volume-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('volume')">
+            {{ column.title }}
+            <span v-if="sortKey === 'volume'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #detectionStatus-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('detectionStatus')">
+            {{ column.title }}
+            <span v-if="sortKey === 'detectionStatus'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #anomalyType-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('anomalyType')">
+            {{ column.title }}
+            <span v-if="sortKey === 'anomalyType'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <template #repairedStatus-header="{ column }">
+          <div class="flex items-center justify-center gap-1 cursor-pointer select-none" @click="setSort('repairedStatus')">
+            {{ column.title }}
+            <span v-if="sortKey === 'repairedStatus'" class="text-[#529B26]">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
+          </div>
+        </template>
+
+        <!-- Checkbox slot (Work Order Mode) -->
+        <template #checkbox="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <input 
+              type="checkbox" 
+              :checked="selectedRows.has(item.id)" 
+              @change="toggleRow(item.id)"
+              class="accent-[#529B26] cursor-pointer"
+            />
+          </div>
+        </template>
+
+        <!-- Location slot -->
+        <template #location="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <button
+              class="font-inter text-xs text-white bg-white/10 hover:bg-white/20 rounded px-2 py-0.5 transition-colors"
+              @dblclick="showInMap(item.location)"
             >
-              <span class="inline-flex items-center gap-1">
-                {{ col.label }}
-                <span v-if="sortKey === col.key" class="text-[#529B26]">
-                  {{ sortDir === 'asc' ? '↑' : '↓' }}
-                </span>
-              </span>
-            </th>
-            <th class="px-3 py-3 text-center">Options</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="pagedRows.length === 0">
-            <td :colspan="workOrderMode ? columns.length + 2 : columns.length + 1"
-              class="py-16 text-center text-[#5D5D5D] font-inter text-sm italic">
-              No anomaly data available. Run an analysis first.
-            </td>
-          </tr>
-          <tr
-            v-for="(row, idx) in pagedRows"
-            :key="row.id"
-            class="border-b border-white/5 transition-colors"
-            :class="[
-              idx % 2 === 0 ? 'bg-transparent' : 'bg-white/[0.03]',
-              selectedRows.has(row.id) ? 'bg-white/10' : 'hover:bg-white/[0.06]'
-            ]"
-          >
-            <td v-if="workOrderMode" class="px-2 py-2 text-center">
-              <input type="checkbox" :checked="selectedRows.has(row.id)"
-                @change="toggleRow(row.id)" class="accent-[#529B26] cursor-pointer"/>
-            </td>
-            <td class="px-3 py-2 text-center font-inter text-xs text-white whitespace-nowrap">{{ row.detectionTime }}</td>
-            <td class="px-3 py-2 text-center">
-              <button
-                class="font-inter text-xs text-white bg-white/10 hover:bg-white/20 rounded px-2 py-0.5 transition-colors"
-                @dblclick="showInMap(row.location)"
-              >
-                {{ row.location }}
-              </button>
-            </td>
-            <td class="px-3 py-2 text-center font-inter text-xs text-white">{{ row.systemAnomalyType }}</td>
-            <td class="px-3 py-2 text-center font-inter text-xs text-white">{{ row.accuracy }}</td>
-            <td class="px-3 py-2 text-center font-inter text-xs text-white">{{ row.volume }}</td>
-            <td class="px-3 py-2 text-center font-inter text-xs font-semibold" :class="detectionStatusColor(row.detectionStatus)">
-              {{ row.detectionStatus }}
-            </td>
-            <td class="px-3 py-2 text-center font-inter text-xs text-white">{{ row.anomalyType }}</td>
-            <td class="px-3 py-2 text-center font-inter text-xs font-semibold" :class="repairStatusColor(row.repairedStatus)">
-              {{ row.repairedStatus }}
-            </td>
-            <td class="px-3 py-2 text-center">
-              <button
-                @click="openEditor(row)"
-                class="px-2 py-1 text-xs font-montserrat font-semibold text-white bg-[#529B26] hover:bg-[#6cc537]
-                       rounded transition-colors"
-              >
-                Edit
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              {{ item.location }}
+            </button>
+          </div>
+        </template>
+
+        <!-- Detection Status slot -->
+        <template #detection-status="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <span class="font-inter text-xs font-semibold" :class="detectionStatusColor(item.detectionStatus)">
+              {{ item.detectionStatus }}
+            </span>
+          </div>
+        </template>
+
+        <!-- Repaired Status slot -->
+        <template #repaired-status="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <span class="font-inter text-xs font-semibold" :class="repairStatusColor(item.repairedStatus)">
+              {{ item.repairedStatus }}
+            </span>
+          </div>
+        </template>
+
+        <!-- Options slot -->
+        <template #action="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <button
+              @click="openEditor(item)"
+              class="px-2 py-1 text-xs font-montserrat font-semibold text-white bg-[#529B26] hover:bg-[#6cc537]
+                     rounded transition-colors"
+            >
+              Edit
+            </button>
+          </div>
+        </template>
+      </FluTableViewAny>
+
+      <div v-else class="h-full flex items-center justify-center text-[#5D5D5D] font-inter text-sm italic">
+        No anomaly data available. Run an analysis first.
+      </div>
     </div>
 
     <!-- ─── PAGINATION ─── -->
-    <div class="flex items-center justify-center gap-1 py-2">
+    <div v-if="totalPages > 1" class="flex items-center justify-center gap-1 py-4">
       <button
         @click="goPage(currentPage - 1)"
         :disabled="currentPage === 1"
@@ -309,6 +371,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import FluTableView from '../../fluentui/FluTableView.vue'
+const FluTableViewAny = FluTableView as any
+
+interface TableColumn {
+  title: string
+  key: string
+  width?: string
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface SimRun {
@@ -328,10 +398,8 @@ interface AnomalyRow {
   repairedStatus: 'repaired' | 'not repaired'
 }
 
-interface Column {
-  key: keyof AnomalyRow
-  label: string
-}
+// Removed old Column interface and columns array as they are replaced by displayColumns
+
 
 interface StatusFilter {
   key: string
@@ -372,16 +440,7 @@ const statusFilters = reactive<StatusFilter[]>([
   { key: 'False Alert', label: 'False Alert', checked: true, color: 'text-[#CE7829]'  },
 ])
 
-const columns: Column[] = [
-  { key: 'detectionTime',      label: 'Initial Report Date' },
-  { key: 'location',           label: 'Location'            },
-  { key: 'systemAnomalyType',  label: 'System Anomaly Type' },
-  { key: 'accuracy',           label: 'Conf. Lvl'           },
-  { key: 'volume',             label: 'Volume'              },
-  { key: 'detectionStatus',    label: 'Detection Status'    },
-  { key: 'anomalyType',        label: 'Anomaly Type'        },
-  { key: 'repairedStatus',     label: 'Repaired Status'     },
-]
+// Removed old Column interface and columns array as they are replaced by displayColumns
 
 const sortKey   = ref<keyof AnomalyRow | ''>('')
 const sortDir   = ref<'asc' | 'desc'>('asc')
@@ -392,6 +451,28 @@ const selectAll    = ref(false)
 const filterOpen   = ref(false)
 const editingRow   = ref<AnomalyRow | null>(null)
 const editForm     = reactive({ detectionStatus: '', anomalyType: '', repairedStatus: '' })
+
+const displayColumns = computed<TableColumn[]>(() => {
+  const cols: TableColumn[] = []
+  
+  if (workOrderMode.value) {
+    cols.push({ title: '', key: 'checkbox', width: '40px' })
+  }
+  
+  cols.push(
+    { key: 'detectionTime',      title: 'Initial Report Date', width: '13%' },
+    { key: 'location',           title: 'Location',            width: '10%' },
+    { key: 'systemAnomalyType',  title: 'System Anomaly Type', width: '15%' },
+    { key: 'accuracy',           title: 'Conf. Lvl',           width: '8%'  },
+    { key: 'volume',             title: 'Volume',              width: '8%'  },
+    { key: 'detectionStatus',    title: 'Detection Status',    width: '13%' },
+    { key: 'anomalyType',        title: 'Anomaly Type',        width: '10%' },
+    { key: 'repairedStatus',     title: 'Repaired Status',     width: '13%' },
+    { key: 'action',             title: 'Options',             width: '8%'  }
+  )
+  
+  return cols
+})
 
 // ─── Filtered + sorted rows ────────────────────────────────────────────────
 const activeFilters = computed(() =>
