@@ -5,17 +5,20 @@
       type="button"
       @click.stop="toggle"
       :disabled="disabled"
-      class="w-full flex items-center justify-between bg-[#6D6D6D] border border-[#5D5D5D] text-white text-sm rounded px-3 py-2 outline-none focus:border-[#529B26] transition-colors"
-      :class="{ 
-        'border-[#529B26]': isOpen,
-        'opacity-50 cursor-not-allowed': disabled
-      }"
+      class="w-full flex items-center justify-between border rounded px-3 py-2 outline-none transition-colors"
+      :class="[
+        customClass || 'bg-[#6D6D6D] border-[#5D5D5D] text-white text-sm focus:border-[#529B26]',
+        { 
+          'border-[#529B26]': isOpen && !customClass,
+          'opacity-50 cursor-not-allowed': disabled
+        }
+      ]"
     >
       <span class="truncate">{{ selectedLabel }}</span>
       <img 
         src="@/assets/images/expand_down_white_24x24.svg" 
         class="w-4 h-4 opacity-70 transition-transform duration-200"
-        :class="{ 'rotate-180': isOpen }"
+        :class="{ 'rotate-180': isOpen, 'hidden': hideIcon }"
       />
     </button>
 
@@ -24,17 +27,18 @@
       <div
         v-if="isOpen"
         ref="dropdownRef"
-        class="fixed z-[9999] bg-[#6D6D6D] border border-[#5D5D5D] rounded shadow-xl overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar"
+        class="fixed z-[9999] border rounded shadow-xl overflow-hidden py-1 max-h-60 overflow-y-auto custom-scrollbar"
+        :class="customDropdownClass || 'bg-[#6D6D6D] border-[#5D5D5D]'"
         :style="dropdownStyle"
       >
         <div
           v-for="option in options"
           :key="getOptionValue(option)"
           @click.stop="selectOption(option)"
-          class="px-3 py-2 text-sm text-white cursor-pointer transition-colors"
+          class="px-3 py-2 text-sm cursor-pointer transition-colors"
           :class="[
-            isSelected(option) ? 'bg-[#529B26]/60' : 'hover:bg-[#529B26]/30',
-            'hover:text-white'
+            isSelected(option) ? 'bg-[#529B26]/20' : 'hover:bg-[#529B26]/10',
+            customDropdownTextClass || 'text-white hover:text-white'
           ]"
         >
           {{ getOptionLabel(option) }}
@@ -54,6 +58,10 @@ interface Props {
   valueKey?: string
   placeholder?: string
   disabled?: boolean
+  customClass?: string
+  customDropdownClass?: string
+  customDropdownTextClass?: string
+  hideIcon?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {

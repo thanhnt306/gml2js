@@ -7,16 +7,18 @@
       <div class="flex flex-col gap-1">
         <span class="text-[#529B26] font-montserrat font-light text-xs">Run analysis date:</span>
         <div class="flex items-center gap-2">
-          <select
-            v-model="selectedRunDate"
-            class="bg-[#1A529B26] text-[#529B26] font-montserrat font-semibold text-xs
-                   rounded px-3 py-1 border-none focus:outline-none cursor-pointer"
-          >
-            <option v-for="run in simulationRuns" :key="run.value" :value="run.value">
-              {{ run.label }}
-            </option>
-            <option v-if="simulationRuns.length === 0" value="" disabled>No runs available</option>
-          </select>
+          <div class="w-[180px]">
+            <BaseSelect
+              v-model="selectedRunDate"
+              :options="simulationRuns"
+              labelKey="label"
+              valueKey="value"
+              customClass="bg-[#1A529B26] text-[#529B26] font-montserrat font-semibold text-xs border-none"
+              customDropdownClass="bg-[#1e1e1e] border-[#5D5D5D]"
+              customDropdownTextClass="text-[#529B26]"
+              placeholder="Select Run"
+            />
+          </div>
           <span class="bg-[#1A529B26] text-[#529B26] font-montserrat font-semibold text-[10px] px-2 py-0.5 rounded">
             Latest
           </span>
@@ -371,6 +373,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import BaseSelect from '@/components/common/BaseSelect.vue'
 import FluTableView from '../../fluentui/FluTableView.vue'
 const FluTableViewAny = FluTableView as any
 
