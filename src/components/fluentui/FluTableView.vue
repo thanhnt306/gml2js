@@ -23,7 +23,7 @@
     </div>
     
     <!-- Data Rows -->
-    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-2" :class="striped ? '' : 'space-y-[7px]'">
+    <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col" :class="striped ? '' : 'space-y-[7px]'">
        <div 
          v-for="(item, rowIndex) in items" 
          :key="rowIndex"

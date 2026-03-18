@@ -26,44 +26,50 @@
       </div>
 
       <!-- Center: overview donut widget -->
-      <div class="flex flex-col items-center gap-2">
-        <span class="text-white font-montserrat font-semibold text-sm">Total Detected Anomalies</span>
-        <!-- Donut chart -->
-        <div class="relative w-24 h-24">
-          <svg viewBox="0 0 36 36" class="w-full h-full -rotate-90">
-            <!-- background ring -->
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#ffffff18" stroke-width="3"/>
-            <!-- Identified (green) -->
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#529B26" stroke-width="3"
-              :stroke-dasharray="`${identifiedPct} ${100 - identifiedPct}`"
-              stroke-dashoffset="0" stroke-linecap="round"/>
-            <!-- Abnormal (yellow) -->
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#BEAE00" stroke-width="3"
-              :stroke-dasharray="`${abnormalPct} ${100 - abnormalPct}`"
-              :stroke-dashoffset="`${-identifiedPct}`" stroke-linecap="round"/>
-            <!-- False Alert (orange) -->
-            <circle cx="18" cy="18" r="15.5" fill="none" stroke="#CE7829" stroke-width="3"
-              :stroke-dasharray="`${falseAlertPct} ${100 - falseAlertPct}`"
-              :stroke-dashoffset="`${-(identifiedPct + abnormalPct)}`" stroke-linecap="round"/>
-          </svg>
-          <div class="absolute inset-0 flex flex-col items-center justify-center">
-            <span class="text-white font-montserrat font-bold text-lg leading-none">{{ summary.total }}</span>
-            <span class="text-[#A7A7A7] font-inter text-[9px]">anomalies</span>
+      <div class="flex flex-col items-center">
+        <span class="text-white font-montserrat font-medium text-lg mb-4">Total Detected Anomalies</span>
+        <div class="flex items-center gap-6">
+          <!-- Donut chart -->
+          <div class="relative w-[130px] h-[130px]">
+            <svg viewBox="0 0 40 40" class="w-full h-full -rotate-90">
+              <!-- thick outer background ring -->
+              <circle cx="20" cy="20" r="18" fill="none" stroke="#4D4D4D" stroke-width="4"/>
+              
+              <!-- False Alert (orange) -->
+              <circle v-if="falseAlertPct > 0" cx="20" cy="20" r="16" fill="none" stroke="#CE7829" stroke-width="2.5"
+                :stroke-dasharray="`${Math.max(0, falseAlertPct - 1)} ${100 - Math.max(0, falseAlertPct - 1)}`"
+                stroke-dashoffset="0" stroke-linecap="round"/>
+              <!-- Abnormal (yellow) -->
+              <circle v-if="abnormalPct > 0" cx="20" cy="20" r="16" fill="none" stroke="#BEAE00" stroke-width="2.5"
+                :stroke-dasharray="`${Math.max(0, abnormalPct - 1)} ${100 - Math.max(0, abnormalPct - 1)}`"
+                :stroke-dashoffset="`${-falseAlertPct}`" stroke-linecap="round"/>
+              <!-- Identified (green) -->
+              <circle v-if="identifiedPct > 0" cx="20" cy="20" r="16" fill="none" stroke="#529B26" stroke-width="2.5"
+                :stroke-dasharray="`${Math.max(0, identifiedPct - 1)} ${100 - Math.max(0, identifiedPct - 1)}`"
+                :stroke-dashoffset="`${-(falseAlertPct + abnormalPct)}`" stroke-linecap="round"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-white font-montserrat font-bold text-4xl leading-none">{{ summary.total }}</span>
+            </div>
           </div>
-        </div>
-        <!-- Legend -->
-        <div class="flex gap-3">
-          <div class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#529B26] flex-shrink-0"/>
-            <span class="text-[#529B26] font-inter text-[10px]">Identified ({{ summary.identified }})</span>
-          </div>
-          <div class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#BEAE00] flex-shrink-0"/>
-            <span class="text-[#BEAE00] font-inter text-[10px]">Abnormal ({{ summary.abnormal }})</span>
-          </div>
-          <div class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-[#CE7829] flex-shrink-0"/>
-            <span class="text-[#CE7829] font-inter text-[10px]">False Alert ({{ summary.falseAlert }})</span>
+
+          <!-- Legend -->
+          <div class="flex flex-col gap-2">
+            <!-- False Alert -->
+            <div class="border border-[#CE7829] rounded-[4px] flex flex-col items-center justify-center w-[90px] h-[40px] bg-transparent">
+              <span class="text-[#CE7829] font-inter text-[10px] leading-tight">False Alert</span>
+              <span class="text-white font-montserrat font-semibold text-[15px] leading-tight">{{ summary.falseAlert }}</span>
+            </div>
+            <!-- Abnormal -->
+            <div class="border border-[#BEAE00] rounded-[4px] flex flex-col items-center justify-center w-[90px] h-[40px] bg-transparent">
+              <span class="text-[#BEAE00] font-inter text-[10px] leading-tight">Abnormal</span>
+              <span class="text-white font-montserrat font-semibold text-[15px] leading-tight">{{ summary.abnormal }}</span>
+            </div>
+            <!-- Identified -->
+            <div class="border border-[#529B26] rounded-[4px] flex flex-col items-center justify-center w-[90px] h-[40px] bg-transparent">
+              <span class="text-[#529B26] font-inter text-[10px] leading-tight">Identified</span>
+              <span class="text-white font-montserrat font-semibold text-[15px] leading-tight">{{ summary.identified }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -73,14 +79,14 @@
     </div>
 
     <!-- ─── TOOLBAR ─── -->
-    <div class="bg-white/10 rounded px-3 py-1.5 flex items-center gap-2">
+    <div class="bg-[#4D4D4D] rounded px-3 py-2 flex items-center gap-3">
       <!-- Generate Work Order toggle -->
       <button
         @click="toggleWorkOrderMode"
-        class="px-3 py-1 rounded font-montserrat font-semibold text-xs transition-colors duration-150"
+        class="px-4 py-1.5 rounded font-inter font-semibold text-[10px] leading-tight text-center transition-colors duration-150"
         :class="workOrderMode
-          ? 'bg-white/20 text-white'
-          : 'bg-[#529B26] text-white hover:bg-[#6cc537]'"
+          ? 'bg-[#6A6A6A] text-white border border-[#8A8A8A]'
+          : 'bg-[#529B26] text-white hover:bg-[#6cc537] box-border border border-[#529B26]'"
       >
         Generate<br/>Work Order
       </button>
@@ -88,60 +94,37 @@
       <button
         v-if="workOrderMode"
         @click="generateSelected"
-        class="px-3 py-1 rounded font-montserrat font-semibold text-xs bg-[#529B26] text-white hover:bg-[#6cc537] transition-colors"
+        class="px-4 py-1.5 rounded font-inter font-semibold text-[10px] leading-tight text-center bg-[#529B26] text-white hover:bg-[#6cc537] transition-colors border border-[#529B26]"
       >
         Generate<br/>Selected
       </button>
 
       <!-- Filter -->
-      <div class="relative" ref="filterRef">
-        <button
-          @click="filterOpen = !filterOpen"
-          class="flex items-center gap-1.5 px-3 py-1 rounded bg-white/20 hover:bg-white/30
-                 font-montserrat font-normal text-white text-xs transition-colors"
-        >
-          <!-- funnel icon -->
-          <svg class="w-3.5 h-2.5" viewBox="0 0 17 12" fill="white">
-            <path d="M0 0h17v2H0zm3 5h11v2H3zm3 5h5v2H6z"/>
-          </svg>
-          Filter
-        </button>
-        <!-- Dropdown filter panel -->
-        <Transition name="fade">
-          <div
-            v-if="filterOpen"
-            class="absolute left-0 top-full mt-1 z-30 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 w-52 shadow-xl"
-          >
-            <p class="text-[#A7A7A7] font-montserrat text-xs font-semibold mb-2">Detection Status</p>
-            <label v-for="f in statusFilters" :key="f.key" class="flex items-center gap-2 py-1 cursor-pointer group">
-              <input type="checkbox" v-model="f.checked" class="hidden"/>
-              <div
-                class="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors"
-                :class="f.checked ? 'border-[#529B26] bg-[#529B26]' : 'border-[#5D5D5D] bg-transparent'"
-                @click="f.checked = !f.checked"
-              >
-                <svg v-if="f.checked" class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                </svg>
-              </div>
-              <span class="font-inter text-xs" :class="f.color">{{ f.label }}</span>
-            </label>
-            <div class="mt-2 pt-2 border-t border-white/10">
-              <button @click="filterOpen = false" class="w-full text-center text-[#529B26] text-xs font-montserrat font-semibold">
-                Apply
-              </button>
-            </div>
-          </div>
-        </Transition>
-      </div>
+      <AnomalyFilterPanel
+        v-model="filters"
+        @clear="clearFilters"
+        :detectionStatusOptions="detectionStatusOptions"
+        :repairedStatusOptions="repairedStatusOptions"
+        :systemAnomalyTypeOptions="systemAnomalyTypeOptions"
+        :anomalyTypeOptions="anomalyTypeOptions"
+        :volumeOptions="volumeOptions"
+        :confidenceOptions="confidenceOptions"
+        :networkTypeOptions="networkTypeOptions"
+        :lengthOptions="lengthOptions"
+        :diameterOptions="diameterOptions"
+        :materialOptions="materialOptions"
+      />
     </div>
 
     <!-- ─── DATA TABLE ─── -->
-    <div class="flex-1 min-h-0 overflow-hidden rounded-lg">
+    <div class="h-[480px] mt-1 relative bg-[#2E2E2E] border border-[#3a3a3a] rounded-[4px] overflow-hidden">
       <FluTableViewAny
         v-if="pagedRows.length > 0"
         :columns="displayColumns"
         :items="pagedRows"
+        striped
+        headerBgColor="#7A7A7A"
+        headerFlush
         class="h-full"
       >
         <!-- Checkbox Header -->
@@ -225,11 +208,19 @@
           </div>
         </template>
 
+        <!-- Initial Report Date slot -->
+        <template #detectionTime="{ item }">
+          <div class="flex flex-col justify-center items-center h-full gap-0.5">
+            <span class="font-inter text-xs text-white leading-tight">{{ item.detectionTime.split(' ')[0] }}</span>
+            <span class="font-inter text-xs text-white leading-tight">{{ item.detectionTime.split(' ')[1] }}</span>
+          </div>
+        </template>
+
         <!-- Location slot -->
         <template #location="{ item }">
           <div class="flex justify-center items-center h-full">
             <button
-              class="font-inter text-xs text-white bg-white/10 hover:bg-white/20 rounded px-2 py-0.5 transition-colors"
+              class="font-inter text-xs text-white bg-[#4D4D4D] border border-[#6D6D6D] rounded-[4px] px-3 py-1 transition-colors"
               @dblclick="showInMap(item.location)"
             >
               {{ item.location }}
@@ -237,76 +228,85 @@
           </div>
         </template>
 
-        <!-- Detection Status slot -->
-        <template #detection-status="{ item }">
+        <!-- Status Columns -->
+        <template #detectionStatus="{ item }">
           <div class="flex justify-center items-center h-full">
-            <span class="font-inter text-xs font-semibold" :class="detectionStatusColor(item.detectionStatus)">
+            <span class="font-inter text-xs font-medium" :class="detectionStatusColor(item.detectionStatus)">
               {{ item.detectionStatus }}
             </span>
           </div>
         </template>
-
-        <!-- Repaired Status slot -->
-        <template #repaired-status="{ item }">
+        
+        <template #repairedStatus="{ item }">
           <div class="flex justify-center items-center h-full">
-            <span class="font-inter text-xs font-semibold" :class="repairStatusColor(item.repairedStatus)">
+            <span class="font-inter text-xs font-medium" :class="repairStatusColor(item.repairedStatus)">
               {{ item.repairedStatus }}
             </span>
           </div>
         </template>
-
-        <!-- Options slot -->
+        
+        <!-- Anomaly Type slot -->
+        <template #anomalyType="{ item }">
+          <div class="flex justify-center items-center h-full">
+            <span class="font-inter text-xs text-white">
+              {{ item.anomalyType }}
+            </span>
+          </div>
+        </template>
+        
+        <!-- Action Options -->
         <template #action="{ item }">
           <div class="flex justify-center items-center h-full">
-            <button
-              @click="openEditor(item)"
-              class="px-2 py-1 text-xs font-montserrat font-semibold text-white bg-[#529B26] hover:bg-[#6cc537]
-                     rounded transition-colors"
-            >
+            <button @click="openEditor(item)" class="px-3 py-1 bg-[#529B26] hover:bg-[#6cc537] text-white text-xs font-montserrat rounded transition-colors whitespace-nowrap">
               Edit
             </button>
           </div>
         </template>
       </FluTableViewAny>
-
-      <div v-else class="h-full flex items-center justify-center text-[#5D5D5D] font-inter text-sm italic">
-        No anomaly data available. Run an analysis first.
+      
+      <!-- Empty State -->
+      <div v-else class="h-full flex flex-col items-center justify-center">
+        <span class="text-[#7A7A7A] font-inter text-sm mb-2">No anomalies match the current filters.</span>
+        <button @click="clearFilters" class="text-[#529B26] hover:underline text-xs">Clear Filters</button>
       </div>
     </div>
 
+
     <!-- ─── PAGINATION ─── -->
-    <div v-if="totalPages > 1" class="flex items-center justify-center gap-1 py-4">
-      <button
-        @click="goPage(currentPage - 1)"
-        :disabled="currentPage === 1"
-        class="w-8 h-8 flex items-center justify-center rounded text-[#7A7A7A] hover:text-white
-               disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-      </button>
-      <button
-        v-for="p in pageButtons"
-        :key="p"
-        @click="goPage(p)"
-        class="w-8 h-8 rounded font-montserrat text-xs transition-colors"
-        :class="p === currentPage
-          ? 'bg-[#529B26] text-white'
-          : 'text-[#7A7A7A] hover:text-white hover:bg-white/10'"
-      >
-        {{ p }}
-      </button>
-      <button
-        @click="goPage(currentPage + 1)"
-        :disabled="currentPage === totalPages"
-        class="w-8 h-8 flex items-center justify-center rounded text-[#7A7A7A] hover:text-white
-               disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-      </button>
+    <div class="flex items-center justify-center gap-1 h-16 shrink-0">
+      <template v-if="totalPages > 1">
+        <button
+          @click="goPage(currentPage - 1)"
+          :disabled="currentPage === 1"
+          class="w-8 h-8 flex items-center justify-center rounded text-[#7A7A7A] hover:text-white
+                 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <button
+          v-for="p in pageButtons"
+          :key="p"
+          @click="goPage(p)"
+          class="w-8 h-8 rounded font-montserrat text-xs transition-colors"
+          :class="p === currentPage
+            ? 'bg-[#529B26] text-white'
+            : 'text-[#7A7A7A] hover:text-white hover:bg-white/10'"
+        >
+          {{ p }}
+        </button>
+        <button
+          @click="goPage(currentPage + 1)"
+          :disabled="currentPage === totalPages"
+          class="w-8 h-8 flex items-center justify-center rounded text-[#7A7A7A] hover:text-white
+                 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </template>
     </div>
 
     <!-- ─── EDIT DIALOG ─── -->
@@ -323,34 +323,32 @@
           <div class="flex flex-col gap-3">
             <div>
               <label class="text-[#A7A7A7] font-inter text-xs mb-1 block">Detection Status</label>
-              <select v-model="editForm.detectionStatus"
-                class="w-full bg-white/10 border border-[#3a3a3a] text-white font-inter text-sm rounded-lg px-3 py-2
-                       focus:outline-none focus:border-[#529B26]">
-                <option>Identified</option>
-                <option>Abnormal</option>
-                <option>False Alert</option>
-              </select>
+              <BaseSelect
+                v-model="editForm.detectionStatus"
+                :options="detectionStatusOptions"
+                labelKey="label"
+                valueKey="value"
+                customClass="bg-white/10 border-[#3a3a3a] text-white font-inter text-sm rounded-lg"
+                customDropdownClass="bg-[#1e1e1e] border-[#3a3a3a]"
+              />
             </div>
             <div>
               <label class="text-[#A7A7A7] font-inter text-xs mb-1 block">Anomaly Type</label>
-              <select v-model="editForm.anomalyType"
-                class="w-full bg-white/10 border border-[#3a3a3a] text-white font-inter text-sm rounded-lg px-3 py-2
-                       focus:outline-none focus:border-[#529B26]">
-                <option>Leak</option>
-                <option>Clog</option>
-                <option>Pilferage</option>
-                <option>Excess</option>
-                <option>N/A</option>
-              </select>
+              <BaseSelect
+                v-model="editForm.anomalyType"
+                :options="anomalyTypeOptions"
+                customClass="bg-white/10 border-[#3a3a3a] text-white font-inter text-sm rounded-lg"
+                customDropdownClass="bg-[#1e1e1e] border-[#3a3a3a]"
+              />
             </div>
             <div>
               <label class="text-[#A7A7A7] font-inter text-xs mb-1 block">Repaired Status</label>
-              <select v-model="editForm.repairedStatus"
-                class="w-full bg-white/10 border border-[#3a3a3a] text-white font-inter text-sm rounded-lg px-3 py-2
-                       focus:outline-none focus:border-[#529B26]">
-                <option>not repaired</option>
-                <option>repaired</option>
-              </select>
+              <BaseSelect
+                v-model="editForm.repairedStatus"
+                :options="repairedStatusOptions"
+                customClass="bg-white/10 border-[#3a3a3a] text-white font-inter text-sm rounded-lg"
+                customDropdownClass="bg-[#1e1e1e] border-[#3a3a3a]"
+              />
             </div>
           </div>
           <div class="flex justify-end gap-2 mt-5">
@@ -375,6 +373,7 @@
 import { ref, reactive, computed } from 'vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import FluTableView from '../../fluentui/FluTableView.vue'
+import AnomalyFilterPanel from './components/AnomalyFilterPanel.vue'
 const FluTableViewAny = FluTableView as any
 
 interface TableColumn {
@@ -404,13 +403,6 @@ interface AnomalyRow {
 // Removed old Column interface and columns array as they are replaced by displayColumns
 
 
-interface StatusFilter {
-  key: string
-  label: string
-  checked: boolean
-  color: string
-}
-
 // ─── State ────────────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 10
 
@@ -423,27 +415,68 @@ const selectedRunDate = ref(simulationRuns.value[simulationRuns.value.length - 1
 
 // Demo / placeholder data rows
 const allRows = ref<AnomalyRow[]>([
-  { id: 1,  detectionTime: '01-15-2025 08:01:22', location: 'PIPE-001', systemAnomalyType: 'Pressure Drop',  accuracy: '87%', volume: 142,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'not repaired' },
-  { id: 2,  detectionTime: '01-15-2025 08:03:45', location: 'PIPE-008', systemAnomalyType: 'Flow Reduction', accuracy: '72%', volume: 56,   detectionStatus: 'Abnormal',    anomalyType: 'Clog',       repairedStatus: 'not repaired' },
-  { id: 3,  detectionTime: '01-15-2025 08:10:01', location: 'JUNC-012', systemAnomalyType: 'Excess Flow',    accuracy: '65%', volume: 301,  detectionStatus: 'False Alert', anomalyType: 'Excess',     repairedStatus: 'not repaired' },
-  { id: 4,  detectionTime: '01-15-2025 08:22:17', location: 'PIPE-023', systemAnomalyType: 'Pressure Drop',  accuracy: '91%', volume: 220,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'repaired'     },
-  { id: 5,  detectionTime: '01-15-2025 08:34:09', location: 'PIPE-031', systemAnomalyType: 'Theft Pattern',  accuracy: '78%', volume: 88,   detectionStatus: 'Identified',  anomalyType: 'Pilferage',  repairedStatus: 'not repaired' },
-  { id: 6,  detectionTime: '01-15-2025 09:00:54', location: 'JUNC-007', systemAnomalyType: 'Flow Reduction', accuracy: '55%', volume: 19,   detectionStatus: 'False Alert', anomalyType: 'N/A',        repairedStatus: 'not repaired' },
-  { id: 7,  detectionTime: '01-15-2025 09:11:30', location: 'PIPE-044', systemAnomalyType: 'Pressure Drop',  accuracy: '83%', volume: 178,  detectionStatus: 'Abnormal',    anomalyType: 'Leak',       repairedStatus: 'not repaired' },
-  { id: 8,  detectionTime: '01-15-2025 09:27:48', location: 'PIPE-055', systemAnomalyType: 'Excess Flow',    accuracy: '69%', volume: 264,  detectionStatus: 'Identified',  anomalyType: 'Excess',     repairedStatus: 'repaired'     },
-  { id: 9,  detectionTime: '01-15-2025 10:03:12', location: 'JUNC-020', systemAnomalyType: 'Theft Pattern',  accuracy: '88%', volume: 135,  detectionStatus: 'Identified',  anomalyType: 'Pilferage',  repairedStatus: 'not repaired' },
-  { id: 10, detectionTime: '01-15-2025 10:44:55', location: 'PIPE-067', systemAnomalyType: 'Flow Reduction', accuracy: '76%', volume: 42,   detectionStatus: 'Abnormal',    anomalyType: 'Clog',       repairedStatus: 'not repaired' },
-  { id: 11, detectionTime: '01-15-2025 11:15:03', location: 'PIPE-078', systemAnomalyType: 'Pressure Drop',  accuracy: '94%', volume: 312,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'not repaired' },
-  { id: 12, detectionTime: '01-15-2025 11:58:22', location: 'JUNC-034', systemAnomalyType: 'Excess Flow',    accuracy: '61%', volume: 98,   detectionStatus: 'False Alert', anomalyType: 'N/A',        repairedStatus: 'not repaired' },
+  { id: 1,  detectionTime: '01-15-2025 08:01:22', location: 'PIPE-001', systemAnomalyType: 'Leak',       accuracy: '87%', volume: 142,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'not repaired' },
+  { id: 2,  detectionTime: '01-15-2025 08:03:45', location: 'PIPE-008', systemAnomalyType: 'Clog',       accuracy: '72%', volume: 56,   detectionStatus: 'Abnormal',    anomalyType: 'Clog',       repairedStatus: 'not repaired' },
+  { id: 3,  detectionTime: '01-15-2025 08:10:01', location: 'JUNC-012', systemAnomalyType: 'Excess',     accuracy: '65%', volume: 301,  detectionStatus: 'False Alert', anomalyType: 'Excess',     repairedStatus: 'not repaired' },
+  { id: 4,  detectionTime: '01-15-2025 08:22:17', location: 'PIPE-023', systemAnomalyType: 'Leak',       accuracy: '91%', volume: 220,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'repaired'     },
+  { id: 5,  detectionTime: '01-15-2025 08:34:09', location: 'PIPE-031', systemAnomalyType: 'Pilferage',  accuracy: '78%', volume: 88,   detectionStatus: 'Identified',  anomalyType: 'Pilferage',  repairedStatus: 'not repaired' },
+  { id: 6,  detectionTime: '01-15-2025 09:00:54', location: 'JUNC-007', systemAnomalyType: 'Clog',       accuracy: '55%', volume: 19,   detectionStatus: 'False Alert', anomalyType: 'N/A',        repairedStatus: 'not repaired' },
+  { id: 7,  detectionTime: '01-15-2025 09:11:30', location: 'PIPE-044', systemAnomalyType: 'Leak',       accuracy: '83%', volume: 178,  detectionStatus: 'Abnormal',    anomalyType: 'Leak',       repairedStatus: 'not repaired' },
+  { id: 8,  detectionTime: '01-15-2025 09:27:48', location: 'PIPE-055', systemAnomalyType: 'Excess',     accuracy: '69%', volume: 264,  detectionStatus: 'Identified',  anomalyType: 'Excess',     repairedStatus: 'repaired'     },
+  { id: 9,  detectionTime: '01-15-2025 10:03:12', location: 'JUNC-020', systemAnomalyType: 'Pilferage',  accuracy: '88%', volume: 135,  detectionStatus: 'Identified',  anomalyType: 'Pilferage',  repairedStatus: 'not repaired' },
+  { id: 10, detectionTime: '01-15-2025 10:44:55', location: 'PIPE-067', systemAnomalyType: 'Clog',       accuracy: '76%', volume: 42,   detectionStatus: 'Abnormal',    anomalyType: 'Clog',       repairedStatus: 'not repaired' },
+  { id: 11, detectionTime: '01-15-2025 11:15:03', location: 'PIPE-078', systemAnomalyType: 'Leak',       accuracy: '94%', volume: 312,  detectionStatus: 'Identified',  anomalyType: 'Leak',       repairedStatus: 'not repaired' },
+  { id: 12, detectionTime: '01-15-2025 11:58:22', location: 'JUNC-034', systemAnomalyType: 'Excess',     accuracy: '61%', volume: 98,   detectionStatus: 'False Alert', anomalyType: 'N/A',        repairedStatus: 'not repaired' },
 ])
 
-const statusFilters = reactive<StatusFilter[]>([
-  { key: 'Identified',  label: 'Identified',  checked: true, color: 'text-[#529B26]'  },
-  { key: 'Abnormal',    label: 'Abnormal',    checked: true, color: 'text-[#BEAE00]'  },
-  { key: 'False Alert', label: 'False Alert', checked: true, color: 'text-[#CE7829]'  },
-])
+// ─── Filter Options state ───
+const detectionStatusOptions = [
+  { value: 'Identified', label: 'Identified', color: 'text-[#FFFFFF]' },
+  { value: 'Abnormal', label: 'Abnormal', color: 'text-[#FFFFFF]' },
+  { value: 'False Alert', label: 'False Alert', color: 'text-[#FFFFFF]' }
+]
+const anomalyTypeOptions = ['Leak', 'Clog', 'Pilferage', 'Excess', 'N/A']
+const systemAnomalyTypeOptions = ['Leak', 'Clog', 'Pilferage', 'Excess'] // No N/A
+const repairedStatusOptions = ['repaired', 'not repaired']
+const volumeOptions = ['< 50 L', '50 - 200 L', '> 200 L']
+const networkTypeOptions = ['Pipe', 'Junction', 'Pump', 'Valve', 'Tank']
+const confidenceOptions = [
+  { label: '> 50%', value: 50 },
+  { label: '> 70%', value: 70 },
+  { label: '> 90%', value: 90 },
+]
+const lengthOptions = ['< 10m', '10m - 50m', '> 50m']
+const diameterOptions = ['< 100mm', '100mm - 300mm', '> 300mm']
+const materialOptions = ['PVC', 'Ductile Iron', 'Steel', 'HDPE']
 
-// Removed old Column interface and columns array as they are replaced by displayColumns
+// Active filters state
+const filters = ref({
+  detectionStatus: ['Identified', 'Abnormal', 'False Alert'], // default selected
+  systemAnomalyType: [] as string[],
+  repairedStatus: [] as string[],
+  anomalyType: [] as string[],
+  volume: [] as string[],
+  networkType: [] as string[],
+  confidenceLevel: null as number | null,
+  length: [] as string[],
+  diameter: [] as string[],
+  material: [] as string[]
+})
+
+const clearFilters = () => {
+  filters.value = {
+    detectionStatus: ['Identified', 'Abnormal', 'False Alert'],
+    systemAnomalyType: [],
+    repairedStatus: [],
+    anomalyType: [],
+    volume: [],
+    networkType: [],
+    confidenceLevel: null,
+    length: [],
+    diameter: [],
+    material: []
+  }
+}
 
 const sortKey   = ref<keyof AnomalyRow | ''>('')
 const sortDir   = ref<'asc' | 'desc'>('asc')
@@ -451,7 +484,6 @@ const currentPage = ref(1)
 const workOrderMode = ref(false)
 const selectedRows = ref<Set<number>>(new Set())
 const selectAll    = ref(false)
-const filterOpen   = ref(false)
 const editingRow   = ref<AnomalyRow | null>(null)
 const editForm     = reactive({ detectionStatus: '', anomalyType: '', repairedStatus: '' })
 
@@ -478,12 +510,46 @@ const displayColumns = computed<TableColumn[]>(() => {
 })
 
 // ─── Filtered + sorted rows ────────────────────────────────────────────────
-const activeFilters = computed(() =>
-  statusFilters.filter(f => f.checked).map(f => f.key)
-)
-
 const filteredRows = computed(() => {
-  let rows = allRows.value.filter(r => activeFilters.value.includes(r.detectionStatus))
+  let rows = allRows.value.filter(row => {
+    // detectionStatus
+    if (filters.value.detectionStatus.length > 0 && !filters.value.detectionStatus.includes(row.detectionStatus)) return false
+    
+    // systemAnomalyType
+    if (filters.value.systemAnomalyType.length > 0 && !filters.value.systemAnomalyType.includes(row.systemAnomalyType)) return false
+    
+    // repairedStatus
+    if (filters.value.repairedStatus.length > 0 && !filters.value.repairedStatus.includes(row.repairedStatus)) return false
+    
+    // anomalyType
+    if (filters.value.anomalyType.length > 0 && !filters.value.anomalyType.includes(row.anomalyType)) return false
+    
+    // volume (simple numeric parsing and binning for demo)
+    if (filters.value.volume.length > 0) {
+      const v = typeof row.volume === 'number' ? row.volume : parseInt(row.volume as string)
+      let match = false
+      if (filters.value.volume.includes('< 50 L') && v < 50) match = true
+      if (filters.value.volume.includes('50 - 200 L') && v >= 50 && v <= 200) match = true
+      if (filters.value.volume.includes('> 200 L') && v > 200) match = true
+      if (!match) return false
+    }
+
+    // networkType (infer from location string for demo)
+    if (filters.value.networkType.length > 0) {
+      const rowNetType = row.location.startsWith('PIPE') ? 'Pipe' 
+                       : (row.location.startsWith('JUNC') ? 'Junction' : 'Other')
+      if (!filters.value.networkType.includes(rowNetType)) return false
+    }
+
+    // confidenceLevel - "accuracy" column parsing (e.g. '87%')
+    if (filters.value.confidenceLevel !== null) {
+      const acc = parseInt(row.accuracy.replace('%', ''))
+      if (!isNaN(acc) && acc <= filters.value.confidenceLevel) return false
+    }
+
+    return true
+  })
+
   if (sortKey.value) {
     const k = sortKey.value
     rows = [...rows].sort((a, b) => {
