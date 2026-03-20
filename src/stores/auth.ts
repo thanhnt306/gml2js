@@ -87,6 +87,23 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
+    const updateUser = async (updatedData: Partial<User>): Promise<boolean> => {
+        try {
+            // In a real app, this would be an API call
+            // const response = await api.put('/auth/me', updatedData);
+            // user.value = response.data.user;
+            
+            // For now, if we are using mocks, we just update local state
+            if (user.value) {
+                user.value = { ...user.value, ...updatedData };
+            }
+            return true;
+        } catch (error) {
+            console.error('Failed to update user:', error);
+            return false;
+        }
+    };
+
     const register = async (userData: any): Promise<boolean> => {
         try {
             await api.post('/auth/register', userData);
@@ -107,5 +124,5 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser, register, activateLicense };
+    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser, register, activateLicense, updateUser };
 });
