@@ -152,6 +152,7 @@ const handleCancelRoles = () => {
     showRoleDialog.value = false
     // Clear everything to reset for next time
     clearGisData()
+    emit('next')
 }
 
 const clearGisData = () => {

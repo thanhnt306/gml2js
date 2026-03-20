@@ -2,7 +2,8 @@
   <div class="flex flex-col w-full">
     <!-- Header -->
     <div 
-      class="flex items-center cursor-pointer mb-4 tap-highlight-transparent"
+      class="flex items-center mb-4 tap-highlight-transparent"
+      :class="disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'"
       @click="handleToggle"
     >
       <!-- Step Icon/Number -->
@@ -60,9 +61,11 @@ const props = withDefaults(defineProps<{
   number: string
   isExpanded?: boolean
   isLastStep?: boolean
+  disabled?: boolean
 }>(), {
   isExpanded: false,
-  isLastStep: false
+  isLastStep: false,
+  disabled: false
 })
 
 const emit = defineEmits<{
@@ -72,7 +75,9 @@ const emit = defineEmits<{
 const iconSize = 32
 
 const handleToggle = () => {
-    emit('toggle')
+    if (!props.disabled) {
+      emit('toggle')
+    }
 }
 </script>
 
@@ -81,3 +86,4 @@ const handleToggle = () => {
     -webkit-tap-highlight-color: transparent;
 }
 </style>
+

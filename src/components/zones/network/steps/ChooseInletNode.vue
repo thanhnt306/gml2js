@@ -1,39 +1,182 @@
 <template>
-  <div class="bg-[#202020] rounded-[15px] border border-[#5D5D5D] w-full max-w-[800px] h-[400px] relative overflow-hidden flex flex-col">
-      <!-- Title/Instruction Override if needed, but StepItem handles the label -->
-      
-      <!-- Map Placeholder -->
-      <div class="flex-1 bg-black/40 flex items-center justify-center relative">
-          <img src="@/assets/images/map_unpressed_26x26.svg" class="w-16 h-16 opacity-20 mb-2" />
-          <span class="text-[#A7A7A7] text-sm absolute mt-12">Map Preview Placeholder</span>
-          
-          <!-- Mock Selection Overlay -->
-          <div class="absolute top-4 left-4 bg-black/60 p-2 rounded text-white text-xs">
-              Please select an Inlet Node
-          </div>
+  <div class="bg-[#202020] rounded-[15px] w-full h-[500px] relative overflow-hidden flex flex-col transition-all duration-300"
+       :class="isActive
+         ? 'border-2 border-[#529B26] shadow-[0_0_24px_rgba(82,155,38,0.45)]'
+         : 'border border-[#5D5D5D]'"
+  >
+
+    <!-- Map Container -->
+    <div ref="mapContainer" class="flex-1 relative">
+      <!-- Loading overlay (shown while backend is processing) -->
+      <div
+        v-if="isLoading || !isReady"
+        class="absolute inset-0 z-10 bg-black/60 flex flex-col items-center justify-center gap-3"
+      >
+        <div class="w-8 h-8 border-2 border-[#529B26] border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-[#A7A7A7] font-inter text-sm">Loading map...</span>
       </div>
 
-       <!-- Action Buttons -->
-      <div class="absolute bottom-4 right-4 flex space-x-2">
-           <button 
-              @click="$emit('cancel')"
-              class="bg-transparent hover:bg-white/10 text-[#A7A7A7] px-4 py-1.5 rounded text-sm font-medium transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="$emit('next')"
-              class="bg-[#529B26] hover:bg-[#6cc537] text-white px-6 py-1.5 rounded text-sm font-medium transition-colors"
-            >
-              Done
-            </button>
+      <!-- Instruction overlay (top-left) -->
+      <div
+        v-if="isReady && !isLoading"
+        class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-sm px-3 py-2 rounded-lg text-white text-xs font-inter max-w-[260px]"
+      >
+        Click on a <b class="text-[#FFEB3B]">node</b> to select it as the inlet.
+        <span v-if="networkMap.selectedInletLabels.value.length > 0" class="block mt-1 text-[#81C784]">
+          {{ networkMap.selectedInletLabels.value.length }} inlet(s) selected
+        </span>
       </div>
+
+      <!-- Search input -->
+      <div
+        v-if="isReady && !isLoading"
+        class="absolute top-14 left-3 z-10"
+      >
+        <input
+          v-model="searchText"
+          @keyup.enter="handleSearch"
+          type="text"
+          placeholder="Search node label..."
+          class="w-[200px] bg-black/70 backdrop-blur-sm border border-white/20 rounded-lg px-3 py-1.5 text-white text-xs font-inter placeholder-[#5D5D5D] focus:outline-none focus:border-[#529B26] transition-colors"
+        />
+      </div>
+
+      <!-- Undo button (top-right) -->
+      <button
+        v-if="networkMap.selectedInletLabels.value.length > 0"
+        @click="networkMap.undoLastInlet()"
+        class="absolute top-3 right-3 z-10 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[#FC6B6D] text-xs font-inter hover:bg-black/90 transition-colors border border-white/10"
+        title="Undo last chosen inlet"
+      >
+        ↩ Undo
+      </button>
+
+      <!-- Legend (bottom-right) -->
+      <div
+        v-if="isReady && !isLoading"
+        class="absolute bottom-14 right-3 z-10 bg-black/70 backdrop-blur-sm rounded-lg p-3 text-[10px] font-inter space-y-1"
+      >
+        <div class="text-white/70 font-semibold mb-1">Legend</div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#4FC3F7]"></span>
+          <span class="text-white/60">Junction</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#FFB74D]"></span>
+          <span class="text-white/60">Meter</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#E57373]"></span>
+          <span class="text-white/60">Valve</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#81C784]"></span>
+          <span class="text-white/60">Pump</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#BA68C8]"></span>
+          <span class="text-white/60">Tank</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#64B5F6]"></span>
+          <span class="text-white/60">Reservoir</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rotate-45 bg-[#FF5722]"></span>
+          <span class="text-white/60">Inlet (selected)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button (Done only — no cancel, user must complete) -->
+    <div class="absolute bottom-3 right-3 flex space-x-2 z-10">
+      <button
+        @click="finishSelection"
+        :disabled="networkMap.selectedInletLabels.value.length === 0"
+        class="bg-[#529B26] hover:bg-[#6cc537] text-white px-6 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Done ({{ networkMap.selectedInletLabels.value.length }})
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const emit = defineEmits<{
-  (e: 'next'): void
-  (e: 'cancel'): void
+import { ref, onMounted, watch } from 'vue'
+import { useNetworkMap } from '@/composables/useNetworkMap'
+import type { NetworkGraphData } from '@/services/NetworkGraphService'
+
+const props = defineProps<{
+  networkData: NetworkGraphData | null
+  isLoading: boolean
+  isActive?: boolean
 }>()
+
+const emit = defineEmits<{
+  (e: 'done', labels: string[]): void
+}>()
+
+const mapContainer = ref<HTMLDivElement | null>(null)
+const networkMap = useNetworkMap()
+const isReady = ref(false)
+const searchText = ref('')
+
+// Expose the map container element for parent overlay targeting
+defineExpose({ mapContainer })
+
+onMounted(() => {
+  if (mapContainer.value) {
+    networkMap.initMap(mapContainer.value)
+
+    // If we already have data, render it
+    if (props.networkData) {
+      renderAndActivate(props.networkData)
+    }
+  }
+})
+
+// Watch for network data changes (arrives after backend processing)
+watch(() => props.networkData, (data) => {
+  if (data && networkMap.isMapReady.value) {
+    renderAndActivate(data)
+  }
+})
+
+// Also watch for map ready state
+watch(() => networkMap.isMapReady.value, (ready) => {
+  if (ready && props.networkData) {
+    renderAndActivate(props.networkData)
+  }
+})
+
+/**
+ * Render network and auto-start inlet selection mode.
+ * This is a one-time flow — user must pick at least 1 inlet.
+ */
+function renderAndActivate(data: NetworkGraphData) {
+  networkMap.renderNetwork(data)
+  isReady.value = true
+
+  // Auto-start inlet selection mode immediately
+  networkMap.enableInletSelection((nodeLabel) => {
+    networkMap.highlightAsInlet(nodeLabel)
+  })
+}
+
+function handleSearch() {
+  if (searchText.value.trim()) {
+    const found = networkMap.searchAndZoomToNode(searchText.value.trim())
+    if (!found) {
+      console.log('Node not found:', searchText.value)
+    }
+  }
+}
+
+function finishSelection() {
+  if (networkMap.selectedInletLabels.value.length === 0) return
+
+  const labels = [...networkMap.selectedInletLabels.value]
+  networkMap.disableInletSelection()
+  emit('done', labels)
+}
 </script>

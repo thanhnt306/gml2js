@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full h-full">
+  <div class="flex flex-col w-full h-full relative">
 
     <!-- ===== PANEL 0: Steps Wizard ===== -->
     <div v-show="currentView === 'steps'" class="flex flex-col w-full h-full">
@@ -12,7 +12,7 @@
       </div>
 
       <!-- Steps Container -->
-      <div class="flex-1 overflow-y-auto custom-scrollbar pr-4">
+      <div ref="stepsContainer" class="flex-1 overflow-y-auto custom-scrollbar pr-4 relative">
         <div class="flex flex-col space-y-6 pl-4">
 
           <!-- Step 1: Display Configuration -->
@@ -32,25 +32,34 @@
             :isExpanded="currentStep === 2"
             @toggle="toggleStep(2)"
           >
-            <AddNetworkFiles :zoneId="props.zoneId" @next="goToStep(3)" />
+            <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" />
           </StepItem>
 
-          <!-- Step 3: Choose Inlet Node -->
+          <!-- Step 3: Choose Inlet Node (disabled until processing completes) -->
           <StepItem
+            ref="step3Ref"
             label="Choose Inlet Node"
             number="3"
             :isExpanded="currentStep === 3"
+            :disabled="!isStep3Enabled"
             @toggle="toggleStep(3)"
           >
-            <ChooseInletNode @next="goToOverview" @cancel="goToStep(2)" />
+            <ChooseInletNode
+              ref="chooseInletRef"
+              :networkData="networkData"
+              :isLoading="isProcessing"
+              :isActive="showBlockingOverlay"
+              @done="handleInletDone"
+            />
           </StepItem>
 
-          <!-- Step 4: Overview and Edit — clicking navigates to overview panel -->
+          <!-- Step 4: Overview and Edit -->
           <StepItem
             label="Overview and Edit network data"
             number="4"
             :isExpanded="false"
             :isLastStep="true"
+            :disabled="!isStep3Completed"
             @toggle="goToOverview"
           />
 
@@ -60,17 +69,13 @@
 
     <!-- ===== PANEL 1: Overview & Edit ===== -->
     <div v-show="currentView === 'overview'" class="flex flex-col w-full h-full">
-      <!-- Header row -->
       <div class="flex items-center gap-3 mb-6 pl-4">
-        <!-- Step badge -->
         <span class="w-9 h-9 rounded-full bg-[#529B26] flex items-center justify-center font-montserrat font-bold text-white text-sm flex-shrink-0">
           4
         </span>
-        <!-- Title -->
         <h2 class="text-white font-montserrat font-semibold text-lg flex-1">
           General review and Edit network data
         </h2>
-        <!-- Action buttons -->
         <div class="flex items-center gap-3">
           <button
             @click="currentView = 'steps'"
@@ -86,23 +91,77 @@
           </button>
         </div>
       </div>
-
-      <!-- Overview content -->
       <div class="flex-1 overflow-y-auto custom-scrollbar">
         <OverviewEditNetwork />
       </div>
     </div>
 
+    <!-- ===== BLOCKING OVERLAY — box-shadow spotlight with rounded cutout ===== -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="showBlockingOverlay" class="fixed inset-0 z-40 pointer-events-none">
+
+          <!-- Visual: single div using box-shadow to cast dark overlay.
+               border-radius matches ChooseInletNode so corners are naturally curved.
+               pointer-events: none so map remains fully clickable. -->
+          <div
+            class="absolute pointer-events-none"
+            :style="{
+              top: cutout.top + 'px',
+              left: cutout.left + 'px',
+              width: cutout.width + 'px',
+              height: cutout.height + 'px',
+              borderRadius: '15px',
+              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55)',
+            }"
+          ></div>
+
+          <!-- Click-blocking: 4 invisible panels that capture pointer events
+               on the dark surrounding area (corners are the tiny gap zones,
+               clicks there fall through harmlessly to the page behind). -->
+          <div class="absolute top-0 left-0 right-0 pointer-events-auto"
+               :style="{ height: cutout.top + 'px' }"></div>
+          <div class="absolute left-0 right-0 bottom-0 pointer-events-auto"
+               :style="{ top: (cutout.top + cutout.height) + 'px' }"></div>
+          <div class="absolute left-0 pointer-events-auto"
+               :style="{ top: cutout.top + 'px', height: cutout.height + 'px', width: cutout.left + 'px' }"></div>
+          <div class="absolute right-0 pointer-events-auto"
+               :style="{ top: cutout.top + 'px', height: cutout.height + 'px', left: (cutout.left + cutout.width) + 'px' }"></div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- ===== PROGRESS DIALOG ===== -->
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="showProgressDialog"
+          class="fixed inset-0 z-[60] flex items-center justify-center"
+        >
+          <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+          <div class="relative bg-[#1e1e1e] border border-white/10 rounded-xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
+            <div class="w-12 h-12 border-3 border-[#529B26] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 class="text-white font-montserrat font-semibold text-lg mb-2">Processing Network</h3>
+            <p class="text-[#A7A7A7] font-inter text-sm">
+              Loading network data from server...<br />
+              Please wait while we build the network graph.
+            </p>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive, nextTick, onBeforeUnmount } from 'vue'
 import StepItem from './StepItem.vue'
 import DisplayConfiguration from './steps/DisplayConfiguration.vue'
 import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
+import NetworkGraphService from '@/services/NetworkGraphService'
+import type { NetworkGraphData } from '@/services/NetworkGraphService'
 
 const props = defineProps<{
   zoneId?: string
@@ -112,12 +171,73 @@ const emit = defineEmits<{
   finish: []
 }>()
 
-// 'steps' = panel 0 (wizard), 'overview' = panel 1 (overview & edit)
 const currentView = ref<'steps' | 'overview'>('steps')
 const currentStep = ref(1)
 
+// Network data state
+const networkData = ref<NetworkGraphData | null>(null)
+const isProcessing = ref(false)
+const isStep3Enabled = ref(false)
+const isStep3Completed = ref(false)
+const showBlockingOverlay = ref(false)
+const showProgressDialog = ref(false)
+
+// Refs
+const stepsContainer = ref<HTMLElement | null>(null)
+const step3Ref = ref<InstanceType<typeof StepItem> | null>(null)
+const chooseInletRef = ref<InstanceType<typeof ChooseInletNode> | null>(null)
+
+// Cutout rect for the blocking overlay hole
+const cutout = reactive({ top: 0, left: 0, width: 0, height: 0 })
+
+// Update cutout position — use the root element of ChooseInletNode
+// so the border/glow aligns with its outer rounded border
+function updateCutoutRect() {
+  const el = chooseInletRef.value?.$el as HTMLElement | undefined
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+  cutout.top = rect.top
+  cutout.left = rect.left
+  cutout.width = rect.width
+  cutout.height = rect.height
+}
+
+// ResizeObserver for dynamic updates
+let resizeObserver: ResizeObserver | null = null
+
+function startObservingCutout() {
+  updateCutoutRect()
+
+  // Observe resize on root element of ChooseInletNode
+  const el = chooseInletRef.value?.$el as HTMLElement | undefined
+  if (el) {
+    resizeObserver = new ResizeObserver(() => updateCutoutRect())
+    resizeObserver.observe(el)
+  }
+
+  // Also update on scroll and window resize
+  stepsContainer.value?.addEventListener('scroll', updateCutoutRect)
+  window.addEventListener('resize', updateCutoutRect)
+}
+
+function stopObservingCutout() {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  stepsContainer.value?.removeEventListener('scroll', updateCutoutRect)
+  window.removeEventListener('resize', updateCutoutRect)
+}
+
+onBeforeUnmount(() => {
+  stopObservingCutout()
+})
+
 const toggleStep = (step: number) => {
+  if (step === 3 && !isStep3Enabled.value) return
+  if (step === 4 && !isStep3Completed.value) return
+
   if (currentStep.value === step) {
+    if (step === 3 && showBlockingOverlay.value) return
     currentStep.value = 0
   } else {
     currentStep.value = step
@@ -129,7 +249,80 @@ const goToStep = (step: number) => {
 }
 
 const goToOverview = () => {
+  if (!isStep3Completed.value) return
   currentView.value = 'overview'
+}
+
+/**
+ * Called when Step 2 emits 'next' after role confirmation.
+ */
+const handleFilesSubmitted = async () => {
+  showProgressDialog.value = true
+  isProcessing.value = true
+
+  try {
+    const data = await NetworkGraphService.processNetworkGraph(
+      props.zoneId || '1',
+      {}
+    )
+    networkData.value = data
+    console.log('[NetworkSetupWizard] Network data loaded:', data.nodes.length, 'nodes,', data.pipes.length, 'pipes')
+
+    showProgressDialog.value = false
+    isProcessing.value = false
+
+    // Enable and auto-expand Step 3
+    isStep3Enabled.value = true
+    await nextTick()
+    currentStep.value = 3
+
+    // Wait for Step 3 to fully expand, then show overlay with cutout
+    await nextTick()
+    // Small delay for CSS transition to expand the step content
+    setTimeout(async () => {
+      scrollToStep3()
+      await nextTick()
+      // Another small delay for scroll to complete
+      setTimeout(() => {
+        updateCutoutRect()
+        showBlockingOverlay.value = true
+        startObservingCutout()
+      }, 600)
+    }, 350)
+  } catch (error) {
+    console.error('[NetworkSetupWizard] Failed to process network:', error)
+    showProgressDialog.value = false
+    isProcessing.value = false
+  }
+}
+
+const scrollToStep3 = () => {
+  if (step3Ref.value?.$el && stepsContainer.value) {
+    const stepEl = step3Ref.value.$el as HTMLElement
+    const containerEl = stepsContainer.value
+    const stepRect = stepEl.getBoundingClientRect()
+    const containerRect = containerEl.getBoundingClientRect()
+    const scrollOffset = stepRect.top - containerRect.top + containerEl.scrollTop
+
+    containerEl.scrollTo({
+      top: scrollOffset,
+      behavior: 'smooth'
+    })
+  }
+}
+
+const handleInletDone = (labels: string[]) => {
+  console.log('[NetworkSetupWizard] Inlet nodes selected:', labels)
+
+  showBlockingOverlay.value = false
+  stopObservingCutout()
+  isStep3Enabled.value = false   // Back to disabled
+  isStep3Completed.value = true
+  currentStep.value = 0
+
+  nextTick(() => {
+    goToOverview()
+  })
 }
 
 const handleFinish = () => {
@@ -148,4 +341,7 @@ const handleFinish = () => {
   background-color: #4B5563;
   border-radius: 20px;
 }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
