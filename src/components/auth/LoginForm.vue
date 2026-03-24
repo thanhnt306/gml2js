@@ -64,6 +64,18 @@
         </div>
       </div>
 
+      <!-- Company Code Field (Step 1) -->
+      <div v-if="currentState === 'signInCompany'" class="flex flex-col space-y-2">
+        <label class="text-white font-montserrat font-medium text-sm">Company Code</label>
+        <input 
+          v-model="form.company"
+          type="text" 
+          placeholder="Enter your company code"
+          class="w-full h-10 bg-transparent border border-[#5D5D5D] rounded-lg px-3 text-[#bebebe] placeholder-[#5D5D5D] focus:outline-none focus:border-white transition-colors"
+          required
+        />
+      </div>
+
       <!-- Common Fields (Username/Password) -->
       <div v-if="['signIn', 'signUp'].includes(currentState)" class="flex flex-col space-y-2">
         <label class="text-white font-montserrat font-medium text-sm">Username</label>
@@ -91,8 +103,11 @@
         </div>
       </div>
 
-      <!-- Forgot Password -->
-      <div v-if="currentState === 'signIn'" class="flex justify-end pt-1">
+      <!-- Forgot Password & Back Button -->
+      <div v-if="currentState === 'signIn'" class="flex justify-between pt-1">
+        <button @click="currentState = 'signInCompany'" type="button" class="text-[#A7A7A7] text-sm hover:text-white font-montserrat font-semibold">
+          &larr; Back
+        </button>
         <button type="button" class="text-[#A7A7A7] text-sm hover:text-white font-montserrat font-semibold">
           Forget password?
         </button>
@@ -129,19 +144,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-// State: 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
-type AuthState = 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
-const currentState = ref<AuthState>('signIn')
+// State: 'signInCompany' | 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
+type AuthState = 'signInCompany' | 'signIn' | 'signUp' | 'activateLicense' | 'licenseContact' | 'passwordContact'
+const currentState = ref<AuthState>('signInCompany')
 const isSubmitting = ref(false)
 
 interface FormData {
+  company: string
   firstName: string
   lastName: string
   email: string
@@ -151,6 +167,7 @@ interface FormData {
 }
 
 const form = reactive<FormData>({
+  company: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -159,9 +176,18 @@ const form = reactive<FormData>({
   licenseKey: ''
 })
 
+onMounted(() => {
+  // Ensure the state always starts from the Company step when the Login page mounts (e.g., after logging out)
+  currentState.value = 'signInCompany'
+  form.company = ''
+  form.username = ''
+  form.password = ''
+})
+
 // Computed Properties for UI Text
 const stateTitle = computed(() => {
   switch (currentState.value) {
+    case 'signInCompany': return 'Workspace'
     case 'signUp': return 'Create your account'
     case 'signIn': return 'Welcome Back!'
     case 'activateLicense': return 'Activate Your License'
@@ -174,6 +200,7 @@ const stateTitle = computed(() => {
 const switchStatePrompt = computed(() => {
   switch (currentState.value) {
     case 'signUp': return 'Already have an account ?'
+    case 'signInCompany':
     case 'signIn': return "Don't have an account ?"
     case 'activateLicense': return 'Info about getting a License?'
     default: return ''
@@ -183,6 +210,7 @@ const switchStatePrompt = computed(() => {
 const switchStateButtonText = computed(() => {
   switch (currentState.value) {
     case 'signUp': return 'Sign in'
+    case 'signInCompany':
     case 'signIn': return 'Sign up'
     case 'activateLicense': return 'Contact us'
     default: return ''
@@ -190,11 +218,12 @@ const switchStateButtonText = computed(() => {
 })
 
 const showSwitchState = computed(() => {
-  return ['signIn', 'signUp', 'activateLicense'].includes(currentState.value)
+  return ['signInCompany', 'signIn', 'signUp', 'activateLicense'].includes(currentState.value)
 })
 
 const submitButtonText = computed(() => {
   switch (currentState.value) {
+    case 'signInCompany': return 'Next'
     case 'signUp': return 'Sign up'
     case 'signIn': return 'Log in'
     case 'activateLicense': return 'Get started'
@@ -204,24 +233,34 @@ const submitButtonText = computed(() => {
 
 /* Logic */
 const toggleState = (): void => {
-  if (currentState.value === 'signIn') currentState.value = 'signUp'
-  else currentState.value = 'signIn'
+  if (currentState.value === 'signInCompany' || currentState.value === 'signIn') currentState.value = 'signUp'
+  else currentState.value = 'signInCompany'
 }
 
 const handleSubmit = async (): Promise<void> => {
+  if (currentState.value === 'signInCompany') {
+    if (!form.company.trim()) {
+      alert('Please enter a company code.')
+      return
+    }
+    currentState.value = 'signIn'
+    return
+  }
+
   isSubmitting.value = true
 
   try {
     if (currentState.value === 'signIn') {
-      const success = await authStore.login(form.username, form.password)
+      const success = await authStore.login(form.username, form.password, form.company)
       if (success) {
         router.push('/app/dashboard')
       } else {
-        alert('Invalid credentials')
+        alert('Invalid username, password, or company code.')
       }
     } 
     else if (currentState.value === 'signUp') {
       const success = await authStore.register({
+        company: form.company, // attach company from step 1
         username: form.username,
         password: form.password,
         firstName: form.firstName,

@@ -21,12 +21,12 @@ export const useAuthStore = defineStore('auth', () => {
     const accessToken = ref<string | null>(null);
 
     // Actions
-    const login = async (username: string, password: string): Promise<boolean> => {
+    const login = async (username: string, password: string, company?: string): Promise<boolean> => {
         try {
             // Call the login endpoint. 
             // The backend MUST return the 'accessToken' in the JSON body 
             // AND set the 'refreshToken' in an HttpOnly cookie.
-            const response = await api.post('/auth/login', { username, password });
+            const response = await api.post('/auth/login', { username, password, company });
 
             accessToken.value = response.data.accessToken;
             isAuthenticated.value = true;
