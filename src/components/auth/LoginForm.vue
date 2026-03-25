@@ -263,8 +263,8 @@ const handleSubmit = async (): Promise<void> => {
         company: form.company, // attach company from step 1
         username: form.username,
         password: form.password,
-        firstName: form.firstName,
-        lastName: form.lastName,
+        first_name: form.firstName, // Map camelCase from JS to snake_case for C++ backend
+        last_name: form.lastName,   // Map camelCase from JS to snake_case for C++ backend
         email: form.email
       })
       if (success) {
