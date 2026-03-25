@@ -268,8 +268,8 @@ const handleSubmit = async (): Promise<void> => {
         email: form.email
       })
       if (success) {
-        alert('Sign up successful! Please sign in.')
-        currentState.value = 'signIn'
+        alert('Sign up successful! Please activate your License to continue.')
+        currentState.value = 'activateLicense'
       } else {
         alert('Registration failed. Username or email might already be in use.')
       }
@@ -277,8 +277,8 @@ const handleSubmit = async (): Promise<void> => {
     else if (currentState.value === 'activateLicense') {
       const success = await authStore.activateLicense(form.licenseKey)
       if (success) {
-        alert('License activated!')
-        currentState.value = 'signIn'
+        alert('License activated successfully! You can now log in.')
+        currentState.value = 'signIn' // Chuyển thẳng sang bước nhập Username/Password
       } else {
         alert('Invalid or expired license key.')
       }
