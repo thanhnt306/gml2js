@@ -124,5 +124,16 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser, register, activateLicense, updateUser };
+    const checkAdminExists = async (company: string): Promise<boolean> => {
+        if (!company) return true; // Default to true to prevent locking out if no company
+        try {
+            const response = await api.get(`/system/users/check-admin?company=${company}`);
+            return response.data.exists;
+        } catch (error) {
+            console.error('Failed to check admin exist:', error);
+            return false; // Safely allow registration if check fails
+        }
+    };
+
+    return { user, isAuthenticated, accessToken, login, logout, refresh, fetchUser, register, activateLicense, updateUser, checkAdminExists };
 });
