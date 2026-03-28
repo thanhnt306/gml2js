@@ -43,7 +43,10 @@
       <!-- Footer: Add Button + Pagination -->
       <div class="flex flex-col mt-4 space-y-3">
          <!-- Add New Zone (Full Width) -->
-         <button class="w-full h-[32px] flex items-center justify-center space-x-2 border border-[#5D5D5D] rounded-[8px] hover:bg-white/5 transition-colors">
+         <button 
+            @click="showAddDialog = true"
+            class="w-full h-[32px] flex items-center justify-center space-x-2 border border-[#5D5D5D] rounded-[8px] hover:bg-white/5 transition-colors"
+         >
              <img src="@/assets/images/add_circle_20x20.svg" class="w-[20px] h-[20px]" />
              <span class="text-[#A7A7A7] font-montserrat text-[15px]">Add new Zone</span>
          </button>
@@ -60,6 +63,12 @@
               </div>
          </div>
       </div>
+      
+      <!-- Add New Zone Dialog -->
+      <AddNewZoneProjectDialog 
+        v-model="showAddDialog" 
+        @zone-created="handleZoneCreated" 
+      />
   </div>
 </template>
 
@@ -68,10 +77,19 @@ import { ref } from 'vue'
 import FluTableView from '../fluentui/FluTableView.vue'
 import FavoriteCheckbox from '../common/FavoriteCheckbox.vue'
 import MoreAction from '../common/MoreAction.vue'
+import AddNewZoneProjectDialog from '../zones/AddNewZoneProjectDialog.vue'
 
 const emit = defineEmits<{
   'open-zone': [item: any]
 }>()
+
+const showAddDialog = ref(false)
+
+const handleZoneCreated = (zoneId: number) => {
+    // For now, we just log it. This could append a new item to `items` ref or re-fetch zones from API
+    console.log('[ZonesTable] New zone created with ID:', zoneId)
+    // Optional: Refresh the zones list from backend here if hooked up
+}
 
 const handleMoreAction = (payload: { key: string; item: any }): void => {
     console.log('Action triggered:', payload.key, payload.item)
