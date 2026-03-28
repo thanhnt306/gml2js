@@ -73,22 +73,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import FluTableView from '../fluentui/FluTableView.vue'
 import FavoriteCheckbox from '../common/FavoriteCheckbox.vue'
 import MoreAction from '../common/MoreAction.vue'
 import AddNewZoneProjectDialog from '../zones/AddNewZoneProjectDialog.vue'
+import { useZoneStore } from '@/stores/zone'
 
 const emit = defineEmits<{
   'open-zone': [item: any]
 }>()
 
+const zoneStore = useZoneStore()
 const showAddDialog = ref(false)
 
 const handleZoneCreated = (zoneId: number) => {
-    // For now, we just log it. This could append a new item to `items` ref or re-fetch zones from API
     console.log('[ZonesTable] New zone created with ID:', zoneId)
-    // Optional: Refresh the zones list from backend here if hooked up
+    // Refresh the zones list from backend
+    zoneStore.fetchZones()
 }
 
 const handleMoreAction = (payload: { key: string; item: any }): void => {
@@ -121,20 +123,13 @@ interface ZoneItem {
   moreAction: string
 }
 
-const items = ref<ZoneItem[]>([
-    { 
-        id: "1",
-        zoneName: { text: "Example Project 1", bold: true, color: "#A7A7A7" }, 
-        description: { text: "Description for Project 1", color: "#A7A7A7" },
-        favorite: true, 
+const items = computed<ZoneItem[]>(() => {
+    return zoneStore.zones.map(zone => ({
+        id: zone.id.toString(),
+        zoneName: { text: zone.name, bold: true, color: "#A7A7A7" },
+        description: { text: zone.description, color: "#A7A7A7" },
+        favorite: (zone as any).favorite || false,
         moreAction: "..."
-    },
-    { 
-        id: "2",
-        zoneName: { text: "Example Project 2", bold: true, color: "#A7A7A7" }, 
-        description: { text: "Description for Project 2", color: "#A7A7A7" },
-        favorite: false,
-        moreAction: "..."
-    }
-])
+    }))
+})
 </script>

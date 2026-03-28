@@ -34,12 +34,19 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import StatusPanel from '@/components/dashboard/StatusPanel.vue'
 import DashboardManagementPanel from '@/components/dashboard/DashboardManagementPanel.vue'
 import ZonesTable from '@/components/dashboard/ZonesTable.vue'
+import { useZoneStore } from '@/stores/zone'
 
 const router = useRouter()
+const zoneStore = useZoneStore()
+
+onMounted(() => {
+    zoneStore.fetchZones()
+})
 
 const handleOpenZone = (item: any): void => {
     // Navigate to Zones page and pass zone ID to open it

@@ -17,6 +17,7 @@ export interface ZoneResponse {
   id: number;
   name: string;
   description: string;
+  favorite: boolean;
   // Other potential fields
 }
 
@@ -50,6 +51,19 @@ class ZoneService {
       return response.data;
     } catch (error) {
       console.error('[ZoneService] Failed to create zone:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches all zones/projects the authenticated user has access to.
+   */
+  async getZones(): Promise<ZoneResponse[]> {
+    try {
+      const response = await api.get<ZoneResponse[]>('/system/projects');
+      return response.data;
+    } catch (error) {
+      console.error('[ZoneService] Failed to fetch zones:', error);
       throw error;
     }
   }
