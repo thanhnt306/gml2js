@@ -50,9 +50,9 @@ onMounted(() => {
 
 const handleOpenZone = (item: any): void => {
     // Navigate to Zones page and pass zone ID to open it
-    // item is the row object. Assuming it has an ID or we pass a mock ID.
-    console.log("Dashboard open zone:", item)
-    router.push({ name: 'zones', query: { zoneId: 1 } }) // Use named route for better reliability
+    const targetId = typeof item === 'object' && item !== null ? item.id : item;
+    console.log("Dashboard open zone:", targetId)
+    router.push({ name: 'zones', query: { zoneId: targetId } }) // Use named route for better reliability
 }
 </script>
 

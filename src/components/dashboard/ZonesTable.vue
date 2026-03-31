@@ -91,6 +91,8 @@ const handleZoneCreated = (zoneId: number) => {
     console.log('[ZonesTable] New zone created with ID:', zoneId)
     // Refresh the zones list from backend
     zoneStore.fetchZones()
+    // Trigger opening the newly created zone
+    emit('open-zone', { id: zoneId })
 }
 
 const handleMoreAction = (payload: { key: string; item: any }): void => {
