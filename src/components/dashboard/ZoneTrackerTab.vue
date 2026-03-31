@@ -13,22 +13,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import ZoneStatusItem from './ZoneStatusItem.vue'
+import { useZoneStore } from '@/stores/zone'
+import type { ZoneTrackerItem } from '@/services/ZoneService'
 
-interface ZoneTrackerItem {
-  zoneName: string
-  simulationTime: string
-  abnormalNum: number
-  identifiedNum: number
-  falseAlertNum: number
-}
+const zoneStore = useZoneStore()
 
-const items = ref<ZoneTrackerItem[]>([
-    { zoneName: "Example Project 1", simulationTime: "6/10/2024", abnormalNum: 20, identifiedNum: 30, falseAlertNum: 20 },
-    { zoneName: "Example Project 2", simulationTime: "6/12/2024", abnormalNum: 10, identifiedNum: 40, falseAlertNum: 5 },
-    { zoneName: "DMA 05", simulationTime: "Today", abnormalNum: 5, identifiedNum: 15, falseAlertNum: 2 }
-])
+const items = computed<ZoneTrackerItem[]>(() => {
+    return zoneStore.zoneStatus?.zoneTracker || []
+})
 
 interface Segment {
   percent: number

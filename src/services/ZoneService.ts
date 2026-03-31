@@ -21,6 +21,24 @@ export interface ZoneResponse {
   // Other potential fields
 }
 
+export interface ZoneTrackerItem {
+  zoneName: string;
+  simulationTime: string;
+  abnormalNum: number;
+  identifiedNum: number;
+  falseAlertNum: number;
+}
+
+export interface AnalysisDateItem {
+  zoneName: string;
+  lastDate: string;
+}
+
+export interface ZoneStatusResponse {
+  zoneTracker: ZoneTrackerItem[];
+  analysisDate: AnalysisDateItem[];
+}
+
 class ZoneService {
   /**
    * Fetches the 3 aligned lists containing user permissions when creating a new Zone.
@@ -64,6 +82,19 @@ class ZoneService {
       return response.data;
     } catch (error) {
       console.error('[ZoneService] Failed to fetch zones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches the unified zone status including tracker info and analysis dates.
+   */
+  async getZoneStatus(): Promise<ZoneStatusResponse> {
+    try {
+      const response = await api.get<ZoneStatusResponse>('/system/zone-status');
+      return response.data;
+    } catch (error) {
+      console.error('[ZoneService] Failed to fetch zone status:', error);
       throw error;
     }
   }

@@ -5,8 +5,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import FluTableView from '../fluentui/FluTableView.vue'
+import { useZoneStore } from '@/stores/zone'
+
+const zoneStore = useZoneStore()
 
 interface Column {
   title: string
@@ -24,23 +27,11 @@ interface AnalysisItem {
   lastDate: { text: string; bold: boolean; color: string }
 }
 
-const items = ref<AnalysisItem[]>([
-    { 
-        // Using object structure to mimic QML customItem
-        zoneName: { text: "Example Project 1", bold: false, color: "#FFFFFF" }, 
-        lastDate: { text: "6/10/2024", bold: false, color: "#A7A7A7" } 
-    },
-    { 
-        zoneName: { text: "Example Project 2", bold: false, color: "#FFFFFF" }, 
-        lastDate: { text: "6/12/2024", bold: false, color: "#A7A7A7" } 
-    },
-    { 
-        zoneName: { text: "DMA 01", bold: false, color: "#FFFFFF" }, 
-        lastDate: { text: "Today", bold: false, color: "#A7A7A7" } 
-    },
-    { 
-        zoneName: { text: "DMA 05", bold: false, color: "#FFFFFF" }, 
-        lastDate: { text: "Yesterday", bold: false, color: "#A7A7A7" } 
-    }
-])
+const items = computed<AnalysisItem[]>(() => {
+    const data = zoneStore.zoneStatus?.analysisDate || []
+    return data.map(item => ({
+        zoneName: { text: item.zoneName, bold: false, color: "#FFFFFF" },
+        lastDate: { text: item.lastDate, bold: false, color: "#A7A7A7" }
+    }))
+})
 </script>

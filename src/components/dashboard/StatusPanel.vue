@@ -25,10 +25,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Component } from 'vue'
 import ZoneTrackerTab from './ZoneTrackerTab.vue'
 import AnalysisDateTab from './AnalysisDateTab.vue'
+import { useZoneStore } from '@/stores/zone'
+
+const zoneStore = useZoneStore()
 
 const currentTab = ref('zoneTracker')
 
@@ -44,5 +47,9 @@ const tabs: Tab[] = [
 
 const activeComponent = computed<Component>(() => {
     return currentTab.value === 'zoneTracker' ? ZoneTrackerTab : AnalysisDateTab
+})
+
+onMounted(() => {
+    zoneStore.fetchZoneStatus()
 })
 </script>
