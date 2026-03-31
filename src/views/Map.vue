@@ -64,7 +64,6 @@
 import { ref } from 'vue'
 import MapCanvas from '@/components/map/MapCanvas.vue'
 import MapToolButton from '@/components/map/MapToolButton.vue'
-import GeometryService from '@/services/GeometryService'
 
 type PanelName = 'filter' | 'edit' | 'findPath' | 'sensor' | 'hydraulic'
 
@@ -75,10 +74,6 @@ const togglePanel = (panelName: PanelName): void => {
         activePanel.value = null
     } else {
         activePanel.value = panelName
-        // Example mock interaction
-        if (panelName === 'sensor') {
-             GeometryService.showSensorLocationsFromDatabase()
-        }
     }
 }
 
