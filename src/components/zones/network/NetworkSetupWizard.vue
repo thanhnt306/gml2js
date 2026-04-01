@@ -22,7 +22,7 @@
             :isExpanded="currentStep === 1"
             @toggle="toggleStep(1)"
           >
-            <DisplayConfiguration @next="goToStep(2)" />
+            <DisplayConfiguration :zoneId="Number(props.zoneId)" @next="goToStep(2)" />
           </StepItem>
 
           <!-- Step 2: Add Network Files -->

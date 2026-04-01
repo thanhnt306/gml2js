@@ -39,6 +39,23 @@ export interface ZoneStatusResponse {
   analysisDate: AnalysisDateItem[];
 }
 
+export interface ZoneUnitsPayload {
+  zoneId: number;
+  pressureUnit?: string;
+  flowUnit?: string;
+  meterUnit?: string;
+  dateFormat?: string;
+}
+
+export interface ZoneUnitsResponse {
+  pressureUnit?: string;
+  flowUnit?: string;
+  meterUnit?: string;
+  dateFormat?: string;
+  pump_curve?: string;
+  valve_curve?: string;
+}
+
 class ZoneService {
   /**
    * Fetches the 3 aligned lists containing user permissions when creating a new Zone.
@@ -95,6 +112,36 @@ class ZoneService {
       return response.data;
     } catch (error) {
       console.error('[ZoneService] Failed to fetch zone status:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetches the unit configuration for a specific zone.
+   * @param zoneId The ID of the zone
+   */
+  async getZoneUnits(zoneId: number): Promise<ZoneUnitsResponse> {
+    try {
+      const response = await api.get<ZoneUnitsResponse>('/system/zone-units', {
+        params: { zoneId }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[ZoneService] Failed to fetch zone units:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates the unit configuration for a specific zone.
+   * @param payload The payload containing zoneId and unit configurations
+   */
+  async updateZoneUnits(payload: ZoneUnitsPayload): Promise<{ message: string }> {
+    try {
+      const response = await api.put<{ message: string }>('/system/zone-units', payload);
+      return response.data;
+    } catch (error) {
+      console.error('[ZoneService] Failed to update zone units:', error);
       throw error;
     }
   }
