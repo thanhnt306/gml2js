@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import BaseSelect from '@/components/common/BaseSelect.vue'
 import ZoneService from '@/services/ZoneService'
 import { dateFormats, flowUnits, pressureUnits, meterUnits } from '@/utils/UnitTypes'
@@ -91,7 +91,7 @@ const emit = defineEmits<{
   (e: 'next'): void
 }>()
 
-const isLoading = ref(true)
+const isLoading = ref(false)
 const isSaving = ref(false)
 
 const config = reactive({
@@ -101,12 +101,11 @@ const config = reactive({
     meterUnit: 'CUBIC_METER'
 })
 
-onMounted(async () => {
-    if (!props.zoneId || isNaN(props.zoneId)) {
-        isLoading.value = false
-        return
-    }
+// REUSABLE FETCH FUNCTION
+const fetchData = async () => {
+    if (!props.zoneId || isNaN(props.zoneId)) return
     
+    isLoading.value = true
     try {
         const units = await ZoneService.getZoneUnits(props.zoneId)
         if (units.dateFormat) config.dateFormat = units.dateFormat
@@ -117,6 +116,16 @@ onMounted(async () => {
         console.error('Failed to load zone units', e)
     } finally {
         isLoading.value = false
+    }
+}
+
+// Initial load
+onMounted(fetchData)
+
+// WATCH FOR ZONE ID CHANGES: Every time you pick a different zone from the UI
+watch(() => props.zoneId, (newId, oldId) => {
+    if (newId !== oldId) {
+        fetchData()
     }
 })
 

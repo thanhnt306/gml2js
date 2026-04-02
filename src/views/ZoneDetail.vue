@@ -80,13 +80,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ContentTabItem from '@/components/zones/ContentTabItem.vue'
 import NetworkSetupWizard from '@/components/zones/network/NetworkSetupWizard.vue'
 import OperationalDataImport from '@/components/zones/operation/OperationalDataImport.vue'
 import AnalysisSetting from '@/components/zones/analysis/AnalysisSetting.vue'
 import AnomalyReport from '@/components/zones/anomaly/AnomalyReport.vue'
+import { useZoneStore } from '@/stores/zone'
 
 const props = defineProps<{
     zoneId?: any
@@ -95,19 +96,25 @@ const props = defineProps<{
 type TabName = 'network' | 'operation' | 'analysis' | 'anomaly'
 
 const route = useRoute()
-const zoneName = ref('Loading...')
+const zoneStore = useZoneStore()
 const expandedTab = ref<TabName | null>('network') // Default expanded
 
 const emit = defineEmits<{
   back: []
 }>()
 
+// Dynamic lookup of zone name from Store
+const zoneName = computed(() => {
+    const id = props.zoneId?.id || props.zoneId || route.params.id
+    const zone = zoneStore.zones.find(z => String(z.id) === String(id))
+    return zone ? zone.name : `Zone ${id}`
+})
+
 const goBack = (): void => {
     emit('back')
 }
 
 const toggleTab = (tab: TabName): void => {
-    // If clicking same tab, collapse it (optional behavior, QML code suggests toggle)
     if (expandedTab.value === tab) {
         expandedTab.value = null
     } else {
@@ -115,10 +122,11 @@ const toggleTab = (tab: TabName): void => {
     }
 }
 
-onMounted(() => {
-    // Mock fetching zone data by ID
-    const id = props.zoneId?.id || props.zoneId || route.params.id
-    zoneName.value = `Example Project ${id}` 
+onMounted(async () => {
+    // Ensure zones are loaded if we arrive here directly via URL
+    if (zoneStore.zones.length === 0) {
+        await zoneStore.fetchZones()
+    }
 })
 </script>
 
