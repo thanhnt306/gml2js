@@ -80,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ContentTabItem from '@/components/zones/ContentTabItem.vue'
 import NetworkSetupWizard from '@/components/zones/network/NetworkSetupWizard.vue'
