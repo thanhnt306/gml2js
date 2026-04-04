@@ -32,7 +32,7 @@
             :isExpanded="currentStep === 2"
             @toggle="toggleStep(2)"
           >
-            <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" />
+              <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" />
           </StepItem>
 
           <!-- Step 3: Choose Inlet Node (disabled until processing completes) -->
@@ -160,7 +160,6 @@ import DisplayConfiguration from './steps/DisplayConfiguration.vue'
 import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
-import NetworkGraphService from '@/services/NetworkGraphService'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
 
 const props = defineProps<{
@@ -175,7 +174,8 @@ const currentView = ref<'steps' | 'overview'>('steps')
 const currentStep = ref(1)
 
 // Network data state
-const networkData = ref<NetworkGraphData | null>(null)
+const networkData_ref = ref<NetworkGraphData | null>(null)
+const networkData = networkData_ref  // alias used in template
 const isProcessing = ref(false)
 const isStep3Enabled = ref(false)
 const isStep3Completed = ref(false)
@@ -255,18 +255,29 @@ const goToOverview = () => {
 
 /**
  * Called when Step 2 emits 'next' after role confirmation.
+ * @param networkData - parsed NetworkGraphData from the save-roles response, or null
  */
-const handleFilesSubmitted = async () => {
+const handleFilesSubmitted = async (networkData: NetworkGraphData | null) => {
+  if (!networkData) {
+    // No network data (user cancelled or no shapefiles parsed) — skip to step 3 anyway
+    isStep3Enabled.value = true
+    await nextTick()
+    currentStep.value = 3
+    return
+  }
+
   showProgressDialog.value = true
   isProcessing.value = true
 
   try {
-    const data = await NetworkGraphService.processNetworkGraph(
-      props.zoneId || '1',
-      {}
+    // Data already parsed from API response — just assign it
+    networkData_ref.value = networkData
+    console.log(
+      '[NetworkSetupWizard] Network data received:',
+      networkData.nodes.length, 'nodes,',
+      networkData.pipes.length, 'pipes,',
+      networkData.issues.length, 'issues'
     )
-    networkData.value = data
-    console.log('[NetworkSetupWizard] Network data loaded:', data.nodes.length, 'nodes,', data.pipes.length, 'pipes')
 
     showProgressDialog.value = false
     isProcessing.value = false
@@ -278,11 +289,9 @@ const handleFilesSubmitted = async () => {
 
     // Wait for Step 3 to fully expand, then show overlay with cutout
     await nextTick()
-    // Small delay for CSS transition to expand the step content
     setTimeout(async () => {
       scrollToStep3()
       await nextTick()
-      // Another small delay for scroll to complete
       setTimeout(() => {
         updateCutoutRect()
         showBlockingOverlay.value = true

@@ -1,190 +1,186 @@
 /**
- * Mock Network Graph Service
+ * NetworkGraphService
  *
- * Simulates a backend that processes uploaded shapefiles and returns
- * a water network graph (junctions + pipes) for map rendering.
+ * Parses the real GeoJSON response returned by the gis-service /save-roles endpoint
+ * and converts it into the NetworkGraphData format consumed by useNetworkMap.
  *
- * In production, this would be replaced by real API calls
- * (e.g. GET /gis/zones/:zoneId/network/graph).
+ * Backend response shape:
+ * {
+ *   success: boolean,
+ *   network: {
+ *     nodes: GeoJSON FeatureCollection (Points),
+ *     pipes: GeoJSON FeatureCollection (LineStrings),
+ *     issues: GisIssue[],
+ *   }
+ * }
  */
 
-// -------------------------------------------------------------------
-// Types (matching the real database schema)
-// -------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────────────
+// Domain types consumed by useNetworkMap
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface NetworkNode {
-  label: string
-  elev_m: number
-  x: number          // longitude (WGS84)
-  y: number          // latitude  (WGS84)
-  node_type: 'junction' | 'meter' | 'valve' | 'pump' | 'tank' | 'reservoir' | 'inlet'
-  dma_id: number
+  label:     string
+  elev_m:    number
+  x:         number   // longitude (WGS84)
+  y:         number   // latitude  (WGS84)
+  /** Normalised lowercase type string: 'junction' | 'meter' | 'valve' | 'pump' | 'tank' | 'reservoir' | 'inlet' */
+  node_type: string
+  dma_id:    number
+  /** All raw attributes from getAttributes() */
+  raw: Record<string, unknown>
 }
 
 export interface NetworkPipe {
-  label: string
-  start_node: string  // junction label
-  stop_node: string   // junction label
-  length_m: number
-  d_mm: number
-  material: string
-  dma_id: number
+  label:      string
+  start_node: string
+  stop_node:  string
+  length_m:   number
+  d_mm:       number
+  material:   string
+  dma_id:     number
+  /** GeoJSON coordinates [[lon,lat], ...] – may contain intermediate vertices */
+  path:       [number, number][]
+  /** All raw attributes from getAttributes() */
+  raw: Record<string, unknown>
 }
 
 export interface NetworkExtent {
-  xmin: number
-  ymin: number
-  xmax: number
-  ymax: number
+  xmin: number; ymin: number
+  xmax: number; ymax: number
+}
+
+export interface GisIssue {
+  id:          string
+  level:       string
+  description: string
 }
 
 export interface NetworkGraphData {
-  nodes: NetworkNode[]
-  pipes: NetworkPipe[]
+  nodes:  NetworkNode[]
+  pipes:  NetworkPipe[]
   extent: NetworkExtent
+  issues: GisIssue[]
 }
 
-// -------------------------------------------------------------------
-// Mock Data — small realistic water network around Hanoi
-// -------------------------------------------------------------------
-
-const BASE_LON = 105.84
-const BASE_LAT = 21.028
-
-function pt(dLon: number, dLat: number): [number, number] {
-  return [BASE_LON + dLon, BASE_LAT + dLat]
+// ─────────────────────────────────────────────────────────────────────────────
+// Node-type normalisation
+// Backend stores types like "Junction", "Meter", "Valve", etc. (capital).
+// useNetworkMap expects lowercase keys.
+// ─────────────────────────────────────────────────────────────────────────────
+const NODE_TYPE_MAP: Record<string, NetworkNode['node_type']> = {
+  junction:   'junction',
+  meter:      'meter',
+  valve:      'valve',
+  pump:       'pump',
+  tank:       'tank',
+  reservoir:  'reservoir',
+  inlet:      'inlet',
 }
 
-const MOCK_NODES: NetworkNode[] = [
-  // Main trunk junctions
-  { label: 'J-001', elev_m: 12.0, x: pt(0, 0)[0],           y: pt(0, 0)[1],           node_type: 'junction', dma_id: 1 },
-  { label: 'J-002', elev_m: 11.5, x: pt(0.004, 0.001)[0],   y: pt(0.004, 0.001)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-003', elev_m: 11.0, x: pt(0.008, 0)[0],       y: pt(0.008, 0)[1],       node_type: 'junction', dma_id: 1 },
-  { label: 'J-004', elev_m: 10.5, x: pt(0.012, 0.002)[0],   y: pt(0.012, 0.002)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-005', elev_m: 10.0, x: pt(0.016, 0)[0],       y: pt(0.016, 0)[1],       node_type: 'junction', dma_id: 1 },
+function normaliseNodeType(raw: string | undefined): string {
+  if (!raw) return 'junction'
+  const lower = raw.toLowerCase()
+  return NODE_TYPE_MAP[lower] ?? 'junction'
+}
 
-  // Branch north
-  { label: 'J-006', elev_m: 11.8, x: pt(0.004, 0.005)[0],   y: pt(0.004, 0.005)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-007', elev_m: 11.3, x: pt(0.008, 0.006)[0],   y: pt(0.008, 0.006)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-008', elev_m: 10.8, x: pt(0.012, 0.005)[0],   y: pt(0.012, 0.005)[1],   node_type: 'junction', dma_id: 1 },
+// ─────────────────────────────────────────────────────────────────────────────
+// Parser: GeoJSON FeatureCollection → domain objects
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // Branch south
-  { label: 'J-009', elev_m: 11.2, x: pt(0.004, -0.004)[0],  y: pt(0.004, -0.004)[1],  node_type: 'junction', dma_id: 1 },
-  { label: 'J-010', elev_m: 10.7, x: pt(0.008, -0.005)[0],  y: pt(0.008, -0.005)[1],  node_type: 'junction', dma_id: 1 },
-  { label: 'J-011', elev_m: 10.2, x: pt(0.012, -0.004)[0],  y: pt(0.012, -0.004)[1],  node_type: 'junction', dma_id: 1 },
+function parseNodesFC(fc: any, dmaId: number): NetworkNode[] {
+  if (!fc || fc.type !== 'FeatureCollection') return []
+  const nodes: NetworkNode[] = []
 
-  // Cross connectors
-  { label: 'J-012', elev_m: 11.0, x: pt(0.006, 0.003)[0],   y: pt(0.006, 0.003)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-013', elev_m: 10.5, x: pt(0.010, 0.003)[0],   y: pt(0.010, 0.003)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-014', elev_m: 10.8, x: pt(0.006, -0.002)[0],  y: pt(0.006, -0.002)[1],  node_type: 'junction', dma_id: 1 },
-  { label: 'J-015', elev_m: 10.3, x: pt(0.010, -0.002)[0],  y: pt(0.010, -0.002)[1],  node_type: 'junction', dma_id: 1 },
+  for (const feature of fc.features ?? []) {
+    const props = feature.properties ?? {}
+    const coords = feature.geometry?.coordinates as [number, number] | undefined
+    if (!coords) continue
 
-  // Dead ends / leaves
-  { label: 'J-016', elev_m: 11.5, x: pt(0.002, 0.004)[0],   y: pt(0.002, 0.004)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-017', elev_m: 10.0, x: pt(0.014, 0.007)[0],   y: pt(0.014, 0.007)[1],   node_type: 'junction', dma_id: 1 },
-  { label: 'J-018', elev_m: 10.5, x: pt(0.002, -0.003)[0],  y: pt(0.002, -0.003)[1],  node_type: 'junction', dma_id: 1 },
-  { label: 'J-019', elev_m:  9.8, x: pt(0.014, -0.006)[0],  y: pt(0.014, -0.006)[1],  node_type: 'junction', dma_id: 1 },
+    const [lon, lat] = coords
+    nodes.push({
+      label:     String(props['LABEL'] ?? props['label'] ?? ''),
+      elev_m:    Number(props['ELEVATION (m)'] ?? props['elevation'] ?? 0),
+      x:         lon,
+      y:         lat,
+      node_type: normaliseNodeType(
+        String(props['NODE_TYPE'] ?? props['node_type'] ?? 'junction')
+      ),
+      dma_id:    dmaId,
+      raw:       props,
+    })
+  }
+  return nodes
+}
 
-  // Special types
-  { label: 'M-001', elev_m: 12.0, x: pt(-0.002, 0.002)[0],  y: pt(-0.002, 0.002)[1],  node_type: 'meter',     dma_id: 1 },
-  { label: 'M-002', elev_m: 10.0, x: pt(0.018, 0.001)[0],   y: pt(0.018, 0.001)[1],   node_type: 'meter',     dma_id: 1 },
-  { label: 'V-001', elev_m: 11.5, x: pt(0.006, 0)[0],       y: pt(0.006, 0)[1],       node_type: 'valve',     dma_id: 1 },
-  { label: 'V-002', elev_m: 10.5, x: pt(0.010, 0)[0],       y: pt(0.010, 0)[1],       node_type: 'valve',     dma_id: 1 },
-  { label: 'P-001', elev_m: 12.5, x: pt(-0.003, -0.001)[0], y: pt(-0.003, -0.001)[1], node_type: 'pump',      dma_id: 1 },
-  { label: 'T-001', elev_m: 15.0, x: pt(-0.004, 0)[0],      y: pt(-0.004, 0)[1],      node_type: 'tank',      dma_id: 1 },
-  { label: 'R-001', elev_m: 18.0, x: pt(-0.005, -0.002)[0], y: pt(-0.005, -0.002)[1], node_type: 'reservoir',  dma_id: 1 },
-]
+function parsePipesFC(fc: any, dmaId: number): NetworkPipe[] {
+  if (!fc || fc.type !== 'FeatureCollection') return []
+  const pipes: NetworkPipe[] = []
 
-const MOCK_PIPES: NetworkPipe[] = [
-  // Main trunk
-  { label: 'PIPE-001', start_node: 'J-001', stop_node: 'J-002', length_m: 450,  d_mm: 300, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-002', start_node: 'J-002', stop_node: 'V-001', length_m: 200,  d_mm: 300, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-003', start_node: 'V-001', stop_node: 'J-003', length_m: 200,  d_mm: 300, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-004', start_node: 'J-003', stop_node: 'V-002', length_m: 200,  d_mm: 250, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-005', start_node: 'V-002', stop_node: 'J-004', length_m: 200,  d_mm: 250, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-006', start_node: 'J-004', stop_node: 'J-005', length_m: 400,  d_mm: 200, material: 'PVC',  dma_id: 1 },
+  for (const feature of fc.features ?? []) {
+    const props = feature.properties ?? {}
+    const coords = (feature.geometry?.coordinates ?? []) as [number, number][]
 
-  // North branch
-  { label: 'PIPE-007', start_node: 'J-002', stop_node: 'J-006', length_m: 500,  d_mm: 200, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-008', start_node: 'J-006', stop_node: 'J-007', length_m: 450,  d_mm: 150, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-009', start_node: 'J-007', stop_node: 'J-008', length_m: 400,  d_mm: 150, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-010', start_node: 'J-008', stop_node: 'J-004', length_m: 350,  d_mm: 150, material: 'PVC',  dma_id: 1 },
+    pipes.push({
+      label:      String(props['LABEL'] ?? props['label'] ?? ''),
+      start_node: String(props['START_NODE'] ?? props['start_node'] ?? ''),
+      stop_node:  String(props['STOP_NODE']  ?? props['stop_node']  ?? ''),
+      length_m:   Number(props['LENGTH (m)'] ?? props['length_m']   ?? 0),
+      d_mm:       Number(props['DIAMETER (mm)'] ?? props['d_mm']    ?? 0),
+      material:   String(props['MATERIAL'] ?? props['material']      ?? ''),
+      dma_id:     dmaId,
+      path:       coords,
+      raw:        props,
+    })
+  }
+  return pipes
+}
 
-  // South branch
-  { label: 'PIPE-011', start_node: 'J-002', stop_node: 'J-009', length_m: 550,  d_mm: 200, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-012', start_node: 'J-009', stop_node: 'J-010', length_m: 450,  d_mm: 150, material: 'HDPE', dma_id: 1 },
-  { label: 'PIPE-013', start_node: 'J-010', stop_node: 'J-011', length_m: 400,  d_mm: 150, material: 'HDPE', dma_id: 1 },
-  { label: 'PIPE-014', start_node: 'J-011', stop_node: 'J-004', length_m: 350,  d_mm: 150, material: 'HDPE', dma_id: 1 },
+function computeExtent(nodes: NetworkNode[], pipes: NetworkPipe[]): NetworkExtent {
+  const xs: number[] = []
+  const ys: number[] = []
 
-  // Cross connectors (north to trunk)
-  { label: 'PIPE-015', start_node: 'J-012', stop_node: 'J-006', length_m: 250,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-016', start_node: 'J-012', stop_node: 'J-003', length_m: 350,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-017', start_node: 'J-013', stop_node: 'J-007', length_m: 300,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-018', start_node: 'J-013', stop_node: 'V-002', length_m: 350,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-
-  // Cross connectors (south to trunk)
-  { label: 'PIPE-019', start_node: 'J-014', stop_node: 'J-009', length_m: 250,  d_mm: 100, material: 'HDPE', dma_id: 1 },
-  { label: 'PIPE-020', start_node: 'J-014', stop_node: 'V-001', length_m: 250,  d_mm: 100, material: 'HDPE', dma_id: 1 },
-  { label: 'PIPE-021', start_node: 'J-015', stop_node: 'J-010', length_m: 300,  d_mm: 100, material: 'HDPE', dma_id: 1 },
-  { label: 'PIPE-022', start_node: 'J-015', stop_node: 'J-003', length_m: 550,  d_mm: 100, material: 'HDPE', dma_id: 1 },
-
-  // Dead-end spurs
-  { label: 'PIPE-023', start_node: 'J-001', stop_node: 'J-016', length_m: 500,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-024', start_node: 'J-008', stop_node: 'J-017', length_m: 300,  d_mm: 75,  material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-025', start_node: 'J-001', stop_node: 'J-018', length_m: 400,  d_mm: 100, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-026', start_node: 'J-011', stop_node: 'J-019', length_m: 300,  d_mm: 75,  material: 'HDPE', dma_id: 1 },
-
-  // Supply connections (pump, tank, reservoir → network)
-  { label: 'PIPE-027', start_node: 'T-001', stop_node: 'P-001', length_m: 120,  d_mm: 400, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-028', start_node: 'P-001', stop_node: 'J-001', length_m: 180,  d_mm: 400, material: 'DI',   dma_id: 1 },
-  { label: 'PIPE-029', start_node: 'R-001', stop_node: 'T-001', length_m: 150,  d_mm: 500, material: 'Steel',dma_id: 1 },
-
-  // Meter connections
-  { label: 'PIPE-030', start_node: 'M-001', stop_node: 'J-001', length_m: 200,  d_mm: 150, material: 'PVC',  dma_id: 1 },
-  { label: 'PIPE-031', start_node: 'J-005', stop_node: 'M-002', length_m: 200,  d_mm: 150, material: 'PVC',  dma_id: 1 },
-]
-
-// -------------------------------------------------------------------
-// Service class
-// -------------------------------------------------------------------
-
-class NetworkGraphService {
-  /**
-   * Simulates the backend processing shapefiles and returning
-   * the network graph. Adds a realistic delay.
-   */
-  async processNetworkGraph(_zoneId: string, _roles: any): Promise<NetworkGraphData> {
-    // Simulate backend processing time (1.5–3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1500))
-
-    const nodes = MOCK_NODES
-    const pipes = MOCK_PIPES
-
-    // Compute extent from node coordinates
-    const xs = nodes.map(n => n.x)
-    const ys = nodes.map(n => n.y)
-    const pad = 0.002
-
-    return {
-      nodes,
-      pipes,
-      extent: {
-        xmin: Math.min(...xs) - pad,
-        ymin: Math.min(...ys) - pad,
-        xmax: Math.max(...xs) + pad,
-        ymax: Math.max(...ys) + pad,
-      }
-    }
+  for (const n of nodes) { xs.push(n.x); ys.push(n.y) }
+  for (const p of pipes) {
+    for (const [lon, lat] of p.path) { xs.push(lon); ys.push(lat) }
   }
 
-  /**
-   * Confirms the selected inlet node(s) with the backend.
-   */
-  async confirmInletNodes(_zoneId: string, inletLabels: string[]): Promise<boolean> {
-    console.log('[NetworkGraphService] Confirming inlet nodes:', inletLabels)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return true
+  if (xs.length === 0) return { xmin: 0, ymin: 0, xmax: 0, ymax: 0 }
+
+  const pad = 0.002
+  return {
+    xmin: Math.min(...xs) - pad,
+    ymin: Math.min(...ys) - pad,
+    xmax: Math.max(...xs) + pad,
+    ymax: Math.max(...ys) + pad,
   }
 }
 
-export default new NetworkGraphService()
+// ─────────────────────────────────────────────────────────────────────────────
+// Public parser — called by AddNetworkFiles after a successful save-roles call
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Converts the raw `network` object from the /save-roles API response
+ * into a fully typed NetworkGraphData object.
+ *
+ * @param rawNetwork  - The `response.network` field from /save-roles
+ * @param dmaId       - The zone/DMA ID (numeric)
+ */
+export function parseNetworkResponse(rawNetwork: any, dmaId: number): NetworkGraphData {
+  const nodes  = parseNodesFC(rawNetwork?.nodes, dmaId)
+  const pipes  = parsePipesFC(rawNetwork?.pipes, dmaId)
+  const extent = computeExtent(nodes, pipes)
+  const issues: GisIssue[] = (rawNetwork?.issues ?? []).map((iss: any) => ({
+    id:          String(iss.id          ?? ''),
+    level:       String(iss.level       ?? ''),
+    description: String(iss.description ?? ''),
+  }))
+
+  console.log(
+    `[NetworkGraphService] Parsed ${nodes.length} nodes, ${pipes.length} pipes,`,
+    `${issues.length} issues from API response`
+  )
+
+  return { nodes, pipes, extent, issues }
+}

@@ -132,27 +132,35 @@ export function useNetworkMap() {
 
     // Render pipes as Polyline graphics
     for (const pipe of data.pipes) {
-      const startNode = nodeMap.get(pipe.start_node)
-      const stopNode = nodeMap.get(pipe.stop_node)
-      if (!startNode || !stopNode) continue
+      // Build path: prefer pipe.path from GeoJSON (may have intermediate vertices)
+      // Fall back to startNode/stopNode lookup for backward compatibility
+      let pathCoords: number[][]
+      if (pipe.path && pipe.path.length >= 2) {
+        pathCoords = pipe.path.map(([lon, lat]) => [lon, lat])
+      } else {
+        const startNode = nodeMap.get(pipe.start_node)
+        const stopNode  = nodeMap.get(pipe.stop_node)
+        if (!startNode || !stopNode) continue
+        pathCoords = [[startNode.x, startNode.y], [stopNode.x, stopNode.y]]
+      }
 
       const pipeGraphic = new Graphic({
         geometry: new Polyline({
-          paths: [[[startNode.x, startNode.y], [stopNode.x, stopNode.y]]],
+          paths: [pathCoords],
           spatialReference: { wkid: 4326 },
         }),
         symbol: new SimpleLineSymbol({
           color: PIPE_COLOR,
-          width: Math.max(1, pipe.d_mm / 100), // scale width by diameter
+          width: Math.max(1, (pipe.d_mm ?? 0) / 100),
           style: 'solid',
         }),
         attributes: {
-          label: pipe.label,
+          label:      pipe.label,
           start_node: pipe.start_node,
-          stop_node: pipe.stop_node,
-          length_m: pipe.length_m,
-          d_mm: pipe.d_mm,
-          material: pipe.material,
+          stop_node:  pipe.stop_node,
+          length_m:   pipe.length_m,
+          d_mm:       pipe.d_mm,
+          material:   pipe.material,
           type: 'pipe',
         },
         popupTemplate: {
@@ -162,10 +170,10 @@ export function useNetworkMap() {
               type: 'fields',
               fieldInfos: [
                 { fieldName: 'start_node', label: 'Start Node' },
-                { fieldName: 'stop_node', label: 'Stop Node' },
-                { fieldName: 'length_m', label: 'Length (m)' },
-                { fieldName: 'd_mm', label: 'Diameter (mm)' },
-                { fieldName: 'material', label: 'Material' },
+                { fieldName: 'stop_node',  label: 'Stop Node' },
+                { fieldName: 'length_m',   label: 'Length (m)' },
+                { fieldName: 'd_mm',       label: 'Diameter (mm)' },
+                { fieldName: 'material',   label: 'Material' },
               ]
             }
           ]
@@ -174,6 +182,7 @@ export function useNetworkMap() {
 
       pipeLayer.value.add(pipeGraphic)
     }
+
 
     // Render nodes as Point graphics
     for (const node of data.nodes) {

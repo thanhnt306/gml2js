@@ -4,6 +4,12 @@ export interface UploadGisResponse {
   success: boolean;
   message: string;
   attributes?: Record<string, string[]>;
+  /** GeoJSON network returned by /save-roles */
+  network?: {
+    nodes: any;
+    pipes: any;
+    issues: any[];
+  };
 }
 
 class NetworkService {

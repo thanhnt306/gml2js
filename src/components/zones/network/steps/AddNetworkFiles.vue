@@ -68,6 +68,7 @@
     <NetworkInfoSelectionDialog 
       :show="showRoleDialog"
       :attributes="serverAttributes"
+      :parser-type="parserType"
       @save="handleSaveRoles"
       @cancel="handleCancelRoles"
     />
@@ -75,18 +76,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import ImportFileItem from '@/components/common/ImportFileItem.vue'
 import NetworkInfoSelectionDialog from '../dialogs/NetworkInfoSelectionDialog.vue'
 import NetworkService from '@/services/NetworkService'
+import { parseNetworkResponse, type NetworkGraphData } from '@/services/NetworkGraphService'
 
 const props = defineProps<{
   zoneId?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'next'): void
+  // Emits network data if parse succeeded, or null if backend had no data yet
+  (e: 'next', networkData: NetworkGraphData | null): void
 }>()
 
 const route = useRoute()
@@ -98,6 +101,16 @@ const isUploadingElev = ref(false)
 const isUploadingGiz = ref(false)
 const showRoleDialog = ref(false)
 const serverAttributes = ref<Record<string, string[]>>({})
+
+// Detect parser type from the uploaded network files
+// If any .csv file is present → CSV mode, otherwise → shapefile mode
+const parserType = computed<'shapefile' | 'csv'>(() => {
+  const hasCsv = networkFiles.value.some((f: any) => {
+    const name: string = (f.file?.name ?? f.name ?? '').toLowerCase()
+    return name.endsWith('.csv')
+  })
+  return hasCsv ? 'csv' : 'shapefile'
+})
 
 const elevFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
 const networkFileRef = ref<InstanceType<typeof ImportFileItem> | null>(null)
@@ -135,8 +148,8 @@ const handleAddGiz = async () => {
             serverAttributes.value = response.attributes
             showRoleDialog.value = true
         } else {
-            // Nếu không có attributes (trường hợp hiếm), chuyển luôn sang bước tiếp theo
-            emit('next')
+            // No attributes returned (rare) – proceed without network data
+            emit('next', null)
         }
     } catch (error) {
         console.error('Failed to upload GIS files:', error)
@@ -150,9 +163,9 @@ const handleAddGiz = async () => {
 
 const handleCancelRoles = () => {
     showRoleDialog.value = false
-    // Clear everything to reset for next time
     clearGisData()
-    emit('next')
+    // User cancelled role selection – move on without network data
+    emit('next', null)
 }
 
 const clearGisData = () => {
@@ -162,18 +175,24 @@ const clearGisData = () => {
 }
 
 const handleSaveRoles = async (rolesConfig: any) => {
-    isUploadingGiz.value = true // Show loading while saving roles
+    isUploadingGiz.value = true
     try {
-        await NetworkService.saveNetworkRoles(zoneId, rolesConfig)
+        const response = await NetworkService.saveNetworkRoles(zoneId, rolesConfig)
         console.log('Network roles saved successfully')
-        
-        // Final clear after everything is successful
+
+        // Parse GeoJSON network data returned by the backend
+        let networkData: NetworkGraphData | null = null
+        if (response.network) {
+            networkData = parseNetworkResponse(response.network, Number(zoneId) || 0)
+        } else {
+            console.warn('[AddNetworkFiles] No network data in save-roles response')
+        }
+
         clearGisData()
-        
         showRoleDialog.value = false
-        emit('next')
+        emit('next', networkData)
     } catch (error) {
-        console.error('Failed to save network roles:', error)
+        console.error('Failed to save network configuration:', error)
         alert('Failed to save network configuration. Please try again.')
     } finally {
         isUploadingGiz.value = false
