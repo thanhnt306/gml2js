@@ -4,7 +4,22 @@ export interface UploadGisResponse {
   success: boolean;
   message: string;
   attributes?: Record<string, string[]>;
-  /** GeoJSON network returned by /save-roles */
+  taskId?: string;
+  /** GeoJSON network returned directly (fallback if not using async flow) */
+  network?: {
+    nodes: any;
+    pipes: any;
+    issues: any[];
+  };
+}
+
+export interface ParseTaskStatusResponse {
+  success: boolean;
+  percentage: number;
+  message: string;
+  completed: boolean;
+  hasError: boolean;
+  errorDetails?: string;
   network?: {
     nodes: any;
     pipes: any;
@@ -54,7 +69,21 @@ class NetworkService {
   }
 
   /**
+   * Polls the status of an async parsing task.
+   */
+  async getParseTaskStatus(zoneId: string, taskId: string): Promise<ParseTaskStatusResponse> {
+    try {
+        const response = await api.get(`/gis/zones/${zoneId}/network/task-status/${taskId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error getting task status:', error);
+        throw error;
+    }
+  }
+
+  /**
    * Uploads Elevation file for a specific zone.
+
    * @param zoneId The ID of the zone
    * @param file The .tif file
    */

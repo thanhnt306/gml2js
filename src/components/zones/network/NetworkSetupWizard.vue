@@ -32,7 +32,7 @@
             :isExpanded="currentStep === 2"
             @toggle="toggleStep(2)"
           >
-              <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" />
+              <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" @start-task="startPolling" />
           </StepItem>
 
           <!-- Step 3: Choose Inlet Node (disabled until processing completes) -->
@@ -140,12 +140,20 @@
         >
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
           <div class="relative bg-[#1e1e1e] border border-white/10 rounded-xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
-            <div class="w-12 h-12 border-3 border-[#529B26] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h3 class="text-white font-montserrat font-semibold text-lg mb-2">Processing Network</h3>
-            <p class="text-[#A7A7A7] font-inter text-sm">
-              Loading network data from server...<br />
-              Please wait while we build the network graph.
-            </p>
+            <h3 class="text-white font-montserrat font-semibold text-lg mb-4">Processing Network</h3>
+            
+            <!-- Progress Bar -->
+            <div class="w-full h-2 bg-[#333] rounded-full overflow-hidden mb-4">
+              <div 
+                class="h-full bg-[#529B26] transition-all duration-300 ease-out"
+                :style="{ width: progressPercent + '%' }"
+              ></div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-[#A7A7A7] font-inter text-sm">{{ progressMessage }}</span>
+              <span class="text-white font-montserrat font-semibold text-sm">{{ Math.round(progressPercent) }}%</span>
+            </div>
           </div>
         </div>
       </Transition>
@@ -251,6 +259,59 @@ const goToStep = (step: number) => {
 const goToOverview = () => {
   if (!isStep3Completed.value) return
   currentView.value = 'overview'
+}
+
+/**
+ * Called when Step 2 initiates an async background parse task.
+ * @param taskId - ID of the parsing task
+ */
+const progressPercent = ref(0)
+const progressMessage = ref('Initializing...')
+let pollInterval: ReturnType<typeof setInterval> | null = null
+
+const startPolling = (taskId: string) => {
+    if (!props.zoneId) return
+
+    showProgressDialog.value = true
+    isProcessing.value = true
+    progressPercent.value = 0
+    progressMessage.value = 'Loading network data from server...'
+
+    if (pollInterval) clearInterval(pollInterval)
+
+    pollInterval = setInterval(async () => {
+        try {
+            const { parseNetworkResponse } = await import('@/services/NetworkGraphService')
+            const NetworkService = (await import('@/services/NetworkService')).default
+            
+            const status = await NetworkService.getParseTaskStatus(props.zoneId as string, taskId)
+            progressPercent.value = status.percentage || 0
+            progressMessage.value = status.message || 'Processing...'
+
+            if (status.completed) {
+                if (pollInterval) clearInterval(pollInterval)
+                pollInterval = null
+                
+                if (status.hasError) {
+                    throw new Error(status.errorDetails || 'Backend syntax error parsing shapefiles')
+                }
+
+                if (status.network) {
+                    const parsedData = parseNetworkResponse(status.network, Number(props.zoneId) || 0)
+                    handleFilesSubmitted(parsedData)
+                } else {
+                    handleFilesSubmitted(null)
+                }
+            }
+        } catch (error) {
+            if (pollInterval) clearInterval(pollInterval)
+            pollInterval = null
+            console.error('[NetworkSetupWizard] Error polling task:', error)
+            alert('Error parsing network: ' + (error instanceof Error ? error.message : 'Unknown error'))
+            showProgressDialog.value = false
+            isProcessing.value = false
+        }
+    }, 1000)
 }
 
 /**

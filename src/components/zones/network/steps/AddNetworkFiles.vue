@@ -88,8 +88,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  // Emits network data if parse succeeded, or null if backend had no data yet
+  // Emits network data if parse succeeded (fallback)
   (e: 'next', networkData: NetworkGraphData | null): void
+  // Emits task ID for async parsing
+  (e: 'start-task', taskId: string): void
 }>()
 
 const route = useRoute()
@@ -180,17 +182,21 @@ const handleSaveRoles = async (rolesConfig: any) => {
         const response = await NetworkService.saveNetworkRoles(zoneId, rolesConfig)
         console.log('Network roles saved successfully')
 
-        // Parse GeoJSON network data returned by the backend
-        let networkData: NetworkGraphData | null = null
-        if (response.network) {
-            networkData = parseNetworkResponse(response.network, Number(zoneId) || 0)
-        } else {
-            console.warn('[AddNetworkFiles] No network data in save-roles response')
-        }
-
         clearGisData()
         showRoleDialog.value = false
-        emit('next', networkData)
+
+        if (response.taskId) {
+            emit('start-task', response.taskId)
+        } else {
+            // Fallback for synchronous backend
+            let networkData: NetworkGraphData | null = null
+            if (response.network) {
+                networkData = parseNetworkResponse(response.network, Number(zoneId) || 0)
+            } else {
+                console.warn('[AddNetworkFiles] No network data in save-roles response')
+            }
+            emit('next', networkData)
+        }
     } catch (error) {
         console.error('Failed to save network configuration:', error)
         alert('Failed to save network configuration. Please try again.')
