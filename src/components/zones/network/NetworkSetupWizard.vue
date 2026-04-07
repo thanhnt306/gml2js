@@ -279,7 +279,10 @@ const startPolling = (taskId: string) => {
 
     if (pollInterval) clearInterval(pollInterval)
 
+    let isPolling = false
     pollInterval = setInterval(async () => {
+        if (isPolling) return
+        isPolling = true
         try {
             const { parseNetworkResponse } = await import('@/services/NetworkGraphService')
             const NetworkService = (await import('@/services/NetworkService')).default
@@ -310,6 +313,8 @@ const startPolling = (taskId: string) => {
             alert('Error parsing network: ' + (error instanceof Error ? error.message : 'Unknown error'))
             showProgressDialog.value = false
             isProcessing.value = false
+        } finally {
+            isPolling = false
         }
     }, 1000)
 }
