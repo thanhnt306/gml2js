@@ -175,6 +175,9 @@ import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
 import { toGisRows, toLinkRows, toNodeRows } from '@/services/NetworkGraphService'
 import ZoneService from '@/services/ZoneService'
+import { useNetworkStore } from '@/stores/network'
+
+const networkStore = useNetworkStore()
 
 const props = defineProps<{
   zoneId?: string
@@ -344,6 +347,8 @@ const handleFilesSubmitted = async (networkData: NetworkGraphData | null) => {
   try {
     // Data already parsed from API response — just assign it
     networkData_ref.value = networkData
+    // Persist to network store so Map.vue can render it automatically
+    networkStore.setNetworkData(networkData, Number(props.zoneId) || 0)
     console.log(
       '[NetworkSetupWizard] Network data received:',
       networkData.nodes.length, 'nodes,',

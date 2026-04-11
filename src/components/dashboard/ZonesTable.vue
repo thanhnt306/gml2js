@@ -79,12 +79,14 @@ import FavoriteCheckbox from '../common/FavoriteCheckbox.vue'
 import MoreAction from '../common/MoreAction.vue'
 import AddNewZoneProjectDialog from '../zones/AddNewZoneProjectDialog.vue'
 import { useZoneStore } from '@/stores/zone'
+import { useNetworkStore } from '@/stores/network'
 
 const emit = defineEmits<{
   'open-zone': [item: any]
 }>()
 
 const zoneStore = useZoneStore()
+const networkStore = useNetworkStore()
 const showAddDialog = ref(false)
 
 const handleZoneCreated = (zoneId: number) => {
@@ -100,6 +102,11 @@ const handleMoreAction = (payload: { key: string; item: any }): void => {
 }
 
 const handleRowClick = (item: any): void => {
+    // Trigger network data load for the selected zone
+    const zoneId = Number(item.id)
+    if (!isNaN(zoneId) && zoneId > 0) {
+        networkStore.loadNetworkForZone(zoneId)
+    }
     // Emit event to parent (Zones.vue or Dashboard.vue)
     console.log('Row clicked:', item)
     emit('open-zone', item)
