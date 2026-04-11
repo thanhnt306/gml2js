@@ -93,7 +93,8 @@ export function useNetworkMap() {
       },
       constraints: {
         snapToZoom: false,
-        maxScale: 0 // 0 disables the max scale limit, allowing infinite zoom in
+        maxZoom: 40,
+        maxScale: 1
       }
     })
 
