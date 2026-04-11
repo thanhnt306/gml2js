@@ -16,6 +16,8 @@ import Polyline from '@arcgis/core/geometry/Polyline'
 import Extent from '@arcgis/core/geometry/Extent'
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol'
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol'
+import TileInfo from '@arcgis/core/layers/support/TileInfo'
+import SpatialReference from '@arcgis/core/geometry/SpatialReference'
 import type { NetworkNode, NetworkGraphData } from '@/services/NetworkGraphService'
 
 // -------------------------------------------------------------------
@@ -82,6 +84,13 @@ export function useNetworkMap() {
     // Add pipe layer first so nodes render on top
     map.addMany([pipeLayer.value, nodeLayer.value])
 
+    // Generate extended LODs (30 levels) to override the basemap's built-in zoom limit.
+    // Without this, the basemap's own LOD metadata caps zoom regardless of maxZoom/maxScale settings.
+    const customLods = TileInfo.create({
+      spatialReference: SpatialReference.WebMercator,
+      numLODs: 30,
+    }).lods
+
     const view = new MapView({
       container,
       map,
@@ -92,9 +101,8 @@ export function useNetworkMap() {
         dockEnabled: false,
       },
       constraints: {
+        lods: customLods,
         snapToZoom: false,
-        maxZoom: 40,
-        maxScale: 1
       }
     })
 
