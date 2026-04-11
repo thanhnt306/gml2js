@@ -14,10 +14,8 @@
  *   }
  * }
  */
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Domain types consumed by useNetworkMap
-// ─────────────────────────────────────────────────────────────────────────────
+import type { GisRow, LinkRow, NodeRow } from '@/components/zones/network/tables/types'
+export type { GisRow, LinkRow, NodeRow }
 
 export interface NetworkNode {
   label:     string
@@ -26,6 +24,7 @@ export interface NetworkNode {
   y:         number   // latitude  (WGS84)
   /** Normalised lowercase type string: 'junction' | 'meter' | 'valve' | 'pump' | 'tank' | 'reservoir' | 'inlet' */
   node_type: string
+  status:    string
   dma_id:    number
   /** All raw attributes from getAttributes() */
   raw: Record<string, unknown>
@@ -38,6 +37,7 @@ export interface NetworkPipe {
   length_m:   number
   d_mm:       number
   material:   string
+  status:     string
   dma_id:     number
   /** GeoJSON coordinates [[lon,lat], ...] – may contain intermediate vertices */
   path:       [number, number][]
@@ -52,8 +52,13 @@ export interface NetworkExtent {
 
 export interface GisIssue {
   id:          string
+  name:        string
   level:       string
   description: string
+  relatedObjectIds: {
+    junctionIds: string[]
+    pipelineIds: string[]
+  }
 }
 
 export interface NetworkGraphData {
@@ -106,6 +111,7 @@ function parseNodesFC(fc: any, dmaId: number): NetworkNode[] {
       node_type: normaliseNodeType(
         String(props['NODE_TYPE'] ?? props['node_type'] ?? 'junction')
       ),
+      status:    String(props['STATUS'] ?? props['status'] ?? ''),
       dma_id:    dmaId,
       raw:       props,
     })
@@ -128,6 +134,7 @@ function parsePipesFC(fc: any, dmaId: number): NetworkPipe[] {
       length_m:   Number(props['LENGTH (m)'] ?? props['length_m']   ?? 0),
       d_mm:       Number(props['DIAMETER (mm)'] ?? props['d_mm']    ?? 0),
       material:   String(props['MATERIAL'] ?? props['material']      ?? ''),
+      status:     String(props['STATUS'] ?? props['status']          ?? ''),
       dma_id:     dmaId,
       path:       coords,
       raw:        props,
@@ -173,8 +180,13 @@ export function parseNetworkResponse(rawNetwork: any, dmaId: number): NetworkGra
   const extent = computeExtent(nodes, pipes)
   const issues: GisIssue[] = (rawNetwork?.issues ?? []).map((iss: any) => ({
     id:          String(iss.id          ?? ''),
+    name:        String(iss.name        ?? iss.level ?? ''),
     level:       String(iss.level       ?? ''),
     description: String(iss.description ?? ''),
+    relatedObjectIds: {
+      junctionIds: Array.isArray(iss.relatedObjectIds?.junctionIds) ? iss.relatedObjectIds.junctionIds.map(String) : [],
+      pipelineIds: Array.isArray(iss.relatedObjectIds?.pipelineIds) ? iss.relatedObjectIds.pipelineIds.map(String) : [],
+    },
   }))
 
   console.log(
@@ -183,4 +195,60 @@ export function parseNetworkResponse(rawNetwork: any, dmaId: number): NetworkGra
   )
 
   return { nodes, pipes, extent, issues }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+// Converters: NetworkGraphData → table rows
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Maps GisIssue[] to GisRow[] for the Overview/Issues table.
+ * Maps "CRITICAL" and "WARNING"/"IMPACTED" level strings to the
+ * severity badge expected by GisDataTable.
+ */
+export function toGisRows(issues: GisIssue[]): GisRow[] {
+  return issues.map(iss => {
+    const levelUpper = iss.level.toUpperCase()
+    let severity: GisRow['severity'] = ''
+    if (levelUpper === 'CRITICAL' || levelUpper === 'ERROR') severity = 'CRITICAL'
+    else if (levelUpper === 'WARNING' || levelUpper === 'IMPACTED') severity = 'IMPACTED'
+
+    return {
+      issue:                iss.name || iss.level,
+      description:          iss.description,
+      severity,
+      related_obj_id:       iss.id,
+      related_junction_ids: iss.relatedObjectIds.junctionIds,
+      related_pipeline_ids: iss.relatedObjectIds.pipelineIds,
+    }
+  })
+}
+
+/**
+ * Maps NetworkPipe[] to LinkRow[] for the Link table.
+ * Falls back to raw attributes for missing fields.
+ */
+export function toLinkRows(pipes: NetworkPipe[]): LinkRow[] {
+  return pipes.map(pipe => ({
+    label:      pipe.label,
+    start_node: pipe.start_node,
+    stop_node:  pipe.stop_node,
+    length:     pipe.length_m ?? pipe.raw['LENGTH (m)'] ?? 0,
+    diameter:   pipe.d_mm    ?? pipe.raw['DIAMETER (mm)'] ?? 0,
+    material:   pipe.material || String(pipe.raw['MATERIAL'] ?? ''),
+    status:     pipe.status || 'Unknown',
+  }))
+}
+
+/**
+ * Maps NetworkNode[] to NodeRow[] for the Node table.
+ * Falls back to raw attributes for missing fields.
+ */
+export function toNodeRows(nodes: NetworkNode[]): NodeRow[] {
+  return nodes.map(node => ({
+    label:     node.label,
+    elevation: node.elev_m,
+    latitude:  Number(node.y.toFixed(6)),
+    longitude: Number(node.x.toFixed(6)),
+    status:    node.status || 'Unknown',
+  }))
 }

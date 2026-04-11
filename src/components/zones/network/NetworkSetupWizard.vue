@@ -92,7 +92,11 @@
         </div>
       </div>
       <div class="flex-1 overflow-y-auto custom-scrollbar">
-        <OverviewEditNetwork />
+        <OverviewEditNetwork
+          :gis-rows="networkData_ref ? toGisRows(networkData_ref.issues) : undefined"
+          :link-rows="networkData_ref ? toLinkRows(networkData_ref.pipes) : undefined"
+          :node-rows="networkData_ref ? toNodeRows(networkData_ref.nodes) : undefined"
+        />
       </div>
     </div>
 
@@ -169,6 +173,7 @@ import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
+import { toGisRows, toLinkRows, toNodeRows } from '@/services/NetworkGraphService'
 
 const props = defineProps<{
   zoneId?: string

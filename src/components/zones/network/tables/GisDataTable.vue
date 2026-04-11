@@ -67,6 +67,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import FluTableView from '../../../fluentui/FluTableView.vue'
+import type { GisRow } from './types'
 const FluTableViewAny = FluTableView as any
 
 interface TableColumn {
@@ -76,23 +77,16 @@ interface TableColumn {
   align?: 'left' | 'center' | 'right'
 }
 
-export interface GisRow {
-  issue: string
-  description: string
-  severity: 'CRITICAL' | 'IMPACTED' | ''
-  related_obj_id?: string
-}
-
 const props = withDefaults(defineProps<{
   rows?: GisRow[]
   itemsPerPage?: number
 }>(), {
   rows: () => [
-    { issue: 'Point Outside Zone', description: 'Node J-12 is located outside the defined boundary of Zone 1.', severity: 'CRITICAL', related_obj_id: 'J-12' },
-    { issue: 'Disconnected Pipe',  description: 'Pipe P-45 has no downstream connection.', severity: 'IMPACTED', related_obj_id: 'P-45' },
-    { issue: 'Duplicate Node',    description: 'Nodes J-101 and J-102 have identical coordinates.', severity: 'IMPACTED', related_obj_id: 'J-101' },
-    { issue: 'Missing Elevation',  description: 'Junction J-88 has an elevation of 0, which may be incorrect.', severity: '', related_obj_id: 'J-88' },
-    { issue: 'Isolated Network',   description: 'A cluster of 5 nodes and 4 pipes is not connected to any reservoir.', severity: 'CRITICAL', related_obj_id: 'RES-1' },
+    { issue: 'Point Outside Zone', description: 'Node J-12 is located outside the defined boundary of Zone 1.', severity: 'CRITICAL', related_obj_id: 'J-12',  related_junction_ids: ['J-12'],       related_pipeline_ids: [] },
+    { issue: 'Disconnected Pipe',  description: 'Pipe P-45 has no downstream connection.',                       severity: 'IMPACTED', related_obj_id: 'P-45',  related_junction_ids: [],              related_pipeline_ids: ['P-45'] },
+    { issue: 'Duplicate Node',     description: 'Nodes J-101 and J-102 have identical coordinates.',             severity: 'IMPACTED', related_obj_id: 'J-101', related_junction_ids: ['J-101','J-102'], related_pipeline_ids: [] },
+    { issue: 'Missing Elevation',  description: 'Junction J-88 has an elevation of 0, which may be incorrect.', severity: '',         related_obj_id: 'J-88',  related_junction_ids: ['J-88'],         related_pipeline_ids: [] },
+    { issue: 'Isolated Network',   description: 'A cluster of 5 nodes and 4 pipes is not connected to any reservoir.', severity: 'CRITICAL', related_obj_id: 'RES-1', related_junction_ids: [], related_pipeline_ids: [] },
   ],
   itemsPerPage: 10
 })

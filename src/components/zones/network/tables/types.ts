@@ -5,6 +5,8 @@ export interface GisRow {
   description: string
   severity: 'CRITICAL' | 'IMPACTED' | ''
   related_obj_id?: string
+  related_junction_ids: string[]
+  related_pipeline_ids: string[]
 }
 
 export interface LinkRow {
