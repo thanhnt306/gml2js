@@ -92,9 +92,8 @@ export function useNetworkMap() {
         dockEnabled: false,
       },
       constraints: {
-        maxZoom: 24, // Allow zooming in closer than the basemap's default limit
-        minScale: 0,
-        maxScale: 0
+        snapToZoom: false,
+        maxScale: 0 // 0 disables the max scale limit, allowing infinite zoom in
       }
     })
 
