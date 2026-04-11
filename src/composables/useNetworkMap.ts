@@ -90,6 +90,11 @@ export function useNetworkMap() {
       ui: { components: ['zoom'] },
       popup: {
         dockEnabled: false,
+      },
+      constraints: {
+        maxZoom: 24, // Allow zooming in closer than the basemap's default limit
+        minScale: 0,
+        maxScale: 0
       }
     })
 
