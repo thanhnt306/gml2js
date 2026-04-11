@@ -174,6 +174,7 @@ import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
 import { toGisRows, toLinkRows, toNodeRows } from '@/services/NetworkGraphService'
+import ZoneService from '@/services/ZoneService'
 
 const props = defineProps<{
   zoneId?: string
@@ -391,8 +392,29 @@ const scrollToStep3 = () => {
   }
 }
 
-const handleInletDone = (labels: string[]) => {
+const handleInletDone = async (labels: string[]) => {
   console.log('[NetworkSetupWizard] Inlet nodes selected:', labels)
+
+  try {
+    showProgressDialog.value = true
+    isProcessing.value = true
+    progressMessage.value = 'Saving inlet configuration...'
+    progressPercent.value = 50
+
+    await ZoneService.updateZoneInlets({
+      zoneId: Number(props.zoneId) || 0,
+      inlets: labels
+    })
+
+    progressPercent.value = 100
+  } catch (error) {
+    console.error('[NetworkSetupWizard] Failed to save inlets:', error)
+    alert('Failed to save inlet configuration. Please try again.')
+    // Note: We might still want to proceed or stop here depending on requirements.
+  } finally {
+    showProgressDialog.value = false
+    isProcessing.value = false
+  }
 
   showBlockingOverlay.value = false
   stopObservingCutout()

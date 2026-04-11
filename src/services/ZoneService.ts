@@ -56,6 +56,11 @@ export interface ZoneUnitsResponse {
   valve_curve?: string;
 }
 
+export interface ZoneInletsPayload {
+  zoneId: number;
+  inlets: string[];
+}
+
 class ZoneService {
   /**
    * Fetches the 3 aligned lists containing user permissions when creating a new Zone.
@@ -142,6 +147,20 @@ class ZoneService {
       return response.data;
     } catch (error) {
       console.error('[ZoneService] Failed to update zone units:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates the inlets for a specific zone.
+   * @param payload The payload containing zoneId and inlets array
+   */
+  async updateZoneInlets(payload: ZoneInletsPayload): Promise<{ message: string }> {
+    try {
+      const response = await api.put<{ message: string }>('/system/zone-inlets', payload);
+      return response.data;
+    } catch (error) {
+      console.error('[ZoneService] Failed to update zone inlets:', error);
       throw error;
     }
   }

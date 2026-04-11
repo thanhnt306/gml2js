@@ -166,8 +166,6 @@ const handleAddGiz = async () => {
 const handleCancelRoles = () => {
     showRoleDialog.value = false
     clearGisData()
-    // User cancelled role selection – move on without network data
-    emit('next', null)
 }
 
 const clearGisData = () => {
