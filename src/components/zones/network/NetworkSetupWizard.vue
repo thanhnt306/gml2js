@@ -46,7 +46,7 @@
           >
             <ChooseInletNode
               ref="chooseInletRef"
-              :networkData="networkData"
+              :networkData="currentNetworkData"
               :isLoading="isProcessing"
               :isActive="showBlockingOverlay"
               @done="handleInletDone"
@@ -92,9 +92,9 @@
       </div>
       <div class="flex-1 overflow-y-auto custom-scrollbar">
         <OverviewEditNetwork
-          :gis-rows="networkData_ref ? toGisRows(networkData_ref.issues) : undefined"
-          :link-rows="networkData_ref ? toLinkRows(networkData_ref.pipes) : undefined"
-          :node-rows="networkData_ref ? toNodeRows(networkData_ref.nodes) : undefined"
+          :gis-rows="gisRows"
+          :link-rows="linkRows"
+          :node-rows="nodeRows"
         />
       </div>
     </div>
@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, onBeforeUnmount } from 'vue'
+import { ref, reactive, nextTick, computed, onBeforeUnmount } from 'vue'
 import StepItem from './StepItem.vue'
 import DisplayConfiguration from './steps/DisplayConfiguration.vue'
 import AddNetworkFiles from './steps/AddNetworkFiles.vue'
@@ -189,14 +189,20 @@ const emit = defineEmits<{
 const currentView = ref<'steps' | 'overview'>('steps')
 const currentStep = ref(1)
 
-// Network data state
 const networkData_ref = ref<NetworkGraphData | null>(null)
-const networkData = networkData_ref  // alias used in template
 const isProcessing = ref(false)
 const isStep3Enabled = ref(false)
 const isStep3Completed = ref(false)
 const showBlockingOverlay = ref(false)
 const showProgressDialog = ref(false)
+
+// Computed for the source of truth (local edit state OR store data)
+const currentNetworkData = computed(() => networkStore.networkData || networkData_ref.value)
+
+// Computed table rows
+const gisRows = computed(() => currentNetworkData.value ? toGisRows(currentNetworkData.value.issues) : [])
+const linkRows = computed(() => currentNetworkData.value ? toLinkRows(currentNetworkData.value.pipes) : [])
+const nodeRows = computed(() => currentNetworkData.value ? toNodeRows(currentNetworkData.value.nodes) : [])
 
 // Refs
 const stepsContainer = ref<HTMLElement | null>(null)
