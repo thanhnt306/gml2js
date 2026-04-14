@@ -59,7 +59,6 @@
             number="4"
             :isExpanded="false"
             :isLastStep="true"
-            :disabled="!isStep3Completed"
             @toggle="goToOverview"
           />
 
