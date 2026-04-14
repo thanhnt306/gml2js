@@ -250,7 +250,6 @@ onBeforeUnmount(() => {
 
 const toggleStep = (step: number) => {
   if (step === 3 && !isStep3Enabled.value) return
-  if (step === 4 && !isStep3Completed.value) return
 
   if (currentStep.value === step) {
     if (step === 3 && showBlockingOverlay.value) return
@@ -265,7 +264,6 @@ const goToStep = (step: number) => {
 }
 
 const goToOverview = () => {
-  if (!isStep3Completed.value) return
   currentView.value = 'overview'
 }
 
