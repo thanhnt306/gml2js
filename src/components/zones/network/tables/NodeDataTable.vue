@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col h-full">
     <!-- Table using FluTableView -->
-    <div class="flex-1 overflow-hidden">
-      <FluTableViewAny 
+    <div class="flex-1 overflow-auto max-h-[476px] custom-scrollbar">
+      <FluTableViewAny
         v-if="paginatedRows.length > 0"
         :columns="displayColumns" 
         :items="paginatedRows" 
@@ -88,7 +88,7 @@ const props = withDefaults(defineProps<{
     { label: 'J-6',   elevation: 44.5, latitude: 21.0270, longitude: 105.8530, status: 'Inactive' },
     { label: 'J-7',   elevation: 45.0, latitude: 21.0260, longitude: 105.8520, status: 'Active' },
   ],
-  itemsPerPage: 10
+  itemsPerPage: 100
 })
 
 defineEmits<{
@@ -137,7 +137,7 @@ const goToPage = (p: number) => {
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4B5563; border-radius: 10px; }
 .pagination-btn {

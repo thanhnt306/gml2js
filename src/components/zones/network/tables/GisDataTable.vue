@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <!-- Table using FluTableView -->
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1 overflow-auto max-h-[476px] custom-scrollbar">
       <FluTableViewAny
         v-if="paginatedRows.length > 0"
         :columns="displayColumns"
@@ -88,7 +88,7 @@ const props = withDefaults(defineProps<{
     { issue: 'Missing Elevation',  description: 'Junction J-88 has an elevation of 0, which may be incorrect.', severity: '',         related_obj_id: 'J-88',  related_junction_ids: ['J-88'],         related_pipeline_ids: [] },
     { issue: 'Isolated Network',   description: 'A cluster of 5 nodes and 4 pipes is not connected to any reservoir.', severity: 'CRITICAL', related_obj_id: 'RES-1', related_junction_ids: [], related_pipeline_ids: [] },
   ],
-  itemsPerPage: 10
+  itemsPerPage: 100
 })
 
 defineEmits<{ 'show-in-map': [id: string] }>()
@@ -122,7 +122,7 @@ const goToPage = (p: number) => {
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4B5563; border-radius: 10px; }
 .pagination-btn {

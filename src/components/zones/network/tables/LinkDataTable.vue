@@ -1,8 +1,8 @@
 <template>
   <div class="flex flex-col h-full">
     <!-- Table using FluTableView -->
-    <div class="flex-1 overflow-hidden">
-      <FluTableViewAny 
+    <div class="flex-1 overflow-auto max-h-[476px] custom-scrollbar">
+      <FluTableViewAny
         v-if="paginatedRows.length > 0"
         :columns="displayColumns" 
         :items="paginatedRows" 
@@ -96,7 +96,7 @@ const props = withDefaults(defineProps<{
     { label: 'P-007', start_node: 'J-6',   stop_node: 'J-7',   length: 92.1,  diameter: 0.15, material: 'HDPE', status: 'Open' },
     { label: 'P-008', start_node: 'J-7',   stop_node: 'J-8',   length: 112.5, diameter: 0.2,  material: 'PVC', status: 'Closed' },
   ],
-  itemsPerPage: 10
+  itemsPerPage: 100
 })
 
 defineEmits<{
@@ -148,7 +148,7 @@ const goToPage = (p: number) => {
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.custom-scrollbar::-webkit-scrollbar { width: 8px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4B5563; border-radius: 10px; }
 .pagination-btn {
