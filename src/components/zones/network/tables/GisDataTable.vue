@@ -96,9 +96,9 @@ defineEmits<{ 'show-in-map': [id: string] }>()
 const currentPage = ref(1)
 
 const displayColumns: TableColumn[] = [
-  { title: 'No', key: 'index', width: '8%', align: 'left' },
-  { title: 'Issue', key: 'issue', width: '25%', align: 'center' },
-  { title: 'Description', key: 'description', align: 'left' },
+  { title: 'No', key: 'index', width: '5%', align: 'left' },
+  { title: 'Issue', key: 'issue', width: '20%', align: 'center' },
+  { title: 'Description', key: 'description', width: '53%', align: 'left' },
   { title: 'Severity', key: 'severity', width: '22%', align: 'center' },
 ]
 
