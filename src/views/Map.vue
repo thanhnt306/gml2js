@@ -1,6 +1,6 @@
 <template>
   <div class="relative w-full h-full">
-    <MapCanvas>
+    <MapCanvas ref="mapCanvasRef">
        <!-- Tools Container (Right Side) -->
        <div class="absolute top-[19px] right-[5px] flex flex-col space-y-[5px]">
           <MapToolButton 
@@ -68,12 +68,31 @@ import MapToolButton from '@/components/map/MapToolButton.vue'
 type PanelName = 'filter' | 'edit' | 'findPath' | 'sensor' | 'hydraulic'
 
 const activePanel = ref<PanelName | null>(null)
+const mapCanvasRef = ref<InstanceType<typeof MapCanvas> | null>(null)
 
 const togglePanel = (panelName: PanelName): void => {
+    console.log('[Map.vue] togglePanel called:', panelName)
+    console.log('[Map.vue] mapCanvasRef:', !!mapCanvasRef.value)
+    if (mapCanvasRef.value) {
+        console.log('[Map.vue] networkMap:', !!mapCanvasRef.value.networkMap)
+    }
+
+    // If turning off edit mode
+    const isEditOn = mapCanvasRef.value?.networkMap?.isEditMode;
+    if (activePanel.value === 'edit' && isEditOn) {
+        mapCanvasRef.value?.networkMap.toggleEditMode()
+        console.log('[Map.vue] Edit mode turned OFF')
+    }
+
     if (activePanel.value === panelName) {
         activePanel.value = null
     } else {
         activePanel.value = panelName
+        // If turning on edit mode
+        if (panelName === 'edit' && !isEditOn) {
+            mapCanvasRef.value?.networkMap?.toggleEditMode()
+            console.log('[Map.vue] Edit mode turned ON !')
+        }
     }
 }
 

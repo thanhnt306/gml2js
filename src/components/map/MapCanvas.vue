@@ -81,6 +81,10 @@ watch(
 onBeforeUnmount(() => {
   networkMap.destroy()
 })
+
+defineExpose({
+  networkMap
+})
 </script>
 
 <style scoped>

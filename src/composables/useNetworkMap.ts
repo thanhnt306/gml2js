@@ -18,6 +18,7 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol'
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol'
 import TileInfo from '@arcgis/core/layers/support/TileInfo'
 import SpatialReference from '@arcgis/core/geometry/SpatialReference'
+import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel'
 import type { NetworkNode, NetworkGraphData } from '@/services/NetworkGraphService'
 
 // -------------------------------------------------------------------
@@ -69,6 +70,11 @@ export function useNetworkMap() {
   let clickHandler: __esri.Handle | null = null
   // Track if popups were enabled before selection
   let popupsWereEnabled = true
+
+  const isEditMode = ref(false)
+  // SketchViewModel instance for node editing
+  let sketchVM: SketchViewModel | null = null
+  let sketchUpdateHandle: __esri.Handle | null = null
 
   // -------------------------------------------------------------------
   // Initialize the ArcGIS map in a container element
@@ -397,10 +403,112 @@ export function useNetworkMap() {
   }
 
   // -------------------------------------------------------------------
+  // Helper: update pipes connected to a moved node
+  // -------------------------------------------------------------------
+  function updateAdjacentPipes(nodeLabel: string, newPoint: Point) {
+    const attached = adjacency.get(nodeLabel);
+    if (!attached || !pipeLayer.value) return;
+
+    attached.forEach((att) => {
+      const pipeGraphic = pipeLayer.value!.graphics.find(
+        (g) => g.attributes?.label === att.pipeLabel
+      );
+      if (!pipeGraphic || !pipeGraphic.geometry) return;
+
+      // Use clone() to trigger ArcGIS reactivity optimally instead of new Polyline
+      const polyline = pipeGraphic.geometry.clone() as Polyline;
+      if (!polyline.paths[0]) return;
+
+      const pathIdx = 0; // assuming single path
+      if (att.role === 'start') {
+        polyline.paths[pathIdx][0] = [newPoint.longitude as number, newPoint.latitude as number];
+      } else {
+        polyline.paths[pathIdx][polyline.paths[pathIdx].length - 1] = [newPoint.longitude as number, newPoint.latitude as number];
+      }
+
+      // Re-assign to trigger the graphics layer redraw
+      pipeGraphic.geometry = polyline;
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Edit Mode: toggle SketchViewModel for node drag-move
+  // -------------------------------------------------------------------
+  function toggleEditMode() {
+    if (!mapView.value || !nodeLayer.value) return;
+
+    isEditMode.value = !isEditMode.value;
+
+    // Best Practice: Lazy Init Pattern
+    // Create the SketchViewModel once and reuse it.
+    if (!sketchVM) {
+      sketchVM = new SketchViewModel({
+        view: mapView.value,
+        layer: nodeLayer.value,
+        updateOnGraphicClick: isEditMode.value,
+        defaultUpdateOptions: {
+          tool: 'move',
+          enableRotation: false,
+          enableScaling: false,
+        },
+      });
+
+      // Register the update listener once
+      sketchUpdateHandle = sketchVM.on('update', (event) => {
+        if (event.state === 'active' && event.toolEventInfo?.type === 'move') {
+          for (const graphic of event.graphics) {
+            if (graphic.attributes?.type !== 'node') continue;
+            const newPoint = graphic.geometry as Point;
+            updateAdjacentPipes(graphic.attributes.label, newPoint);
+          }
+        }
+
+        // When the user finishes dragging (commits), also sync once more
+        if (event.state === 'complete') {
+          for (const graphic of event.graphics) {
+            if (graphic.attributes?.type !== 'node') continue;
+            const newPoint = graphic.geometry as Point;
+            updateAdjacentPipes(graphic.attributes.label, newPoint);
+            // Update the in-memory nodeMap so adjacency stays consistent
+            const nodeEntry = nodeMap.get(graphic.attributes.label);
+            if (nodeEntry) {
+              nodeEntry.x = (newPoint.longitude as number);
+              nodeEntry.y = (newPoint.latitude as number);
+            }
+          }
+          console.log('[useNetworkMap] Node move committed.');
+        }
+      });
+    }
+
+    if (isEditMode.value) {
+      // Enable selection by clicking on the graphic
+      sketchVM.updateOnGraphicClick = true;
+      console.log('[useNetworkMap] Edit mode ON — click a node to move it.');
+    } else {
+      // Disable selection and cancel active operations
+      sketchVM.updateOnGraphicClick = false;
+      sketchVM.cancel();
+      console.log('[useNetworkMap] Edit mode OFF.');
+    }
+  }
+
+  // -------------------------------------------------------------------
   // Cleanup
   // -------------------------------------------------------------------
   function destroy() {
     disableInletSelection()
+
+    if (sketchUpdateHandle) {
+      sketchUpdateHandle.remove();
+      sketchUpdateHandle = null;
+    }
+    if (sketchVM) {
+      sketchVM.cancel();
+      sketchVM.destroy();
+      sketchVM = null;
+    }
+
     if (mapView.value) {
       mapView.value.destroy()
       mapView.value = null
@@ -434,5 +542,9 @@ export function useNetworkMap() {
     undoAllInlets,
     searchAndZoomToNode,
     destroy,
+
+    // Edit Mode
+    isEditMode,
+    toggleEditMode,
   }
 }
