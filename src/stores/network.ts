@@ -4,11 +4,35 @@ import api from '@/services/api'
 import { parseNetworkResponse } from '@/services/NetworkGraphService'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
 
+// Send a heartbeat every 5 minutes to prevent geometry-service TTL eviction.
+const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000
+
 export const useNetworkStore = defineStore('network', () => {
   const networkData = ref<NetworkGraphData | null>(null)
   const currentZoneId = ref<number | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Internal heartbeat timer — never exposed outside the store.
+  let _heartbeatTimer: ReturnType<typeof setInterval> | null = null
+
+  function _startHeartbeat(zoneId: number) {
+    _stopHeartbeat()
+    _heartbeatTimer = setInterval(async () => {
+      try {
+        await api.put(`/system/zones/${zoneId}/heartbeat`)
+      } catch {
+        // Silent — geometry-service may be temporarily down, not critical
+      }
+    }, HEARTBEAT_INTERVAL_MS)
+  }
+
+  function _stopHeartbeat() {
+    if (_heartbeatTimer !== null) {
+      clearInterval(_heartbeatTimer)
+      _heartbeatTimer = null
+    }
+  }
 
   /**
    * Called from NetworkSetupWizard after parsing completes.
@@ -18,6 +42,7 @@ export const useNetworkStore = defineStore('network', () => {
     networkData.value = data
     currentZoneId.value = zoneId
     error.value = null
+    _startHeartbeat(zoneId)
   }
 
   /**
@@ -34,6 +59,7 @@ export const useNetworkStore = defineStore('network', () => {
       const resp = await api.get(`/gis/zones/${zoneId}/network`)
       networkData.value = parseNetworkResponse(resp.data, zoneId)
       currentZoneId.value = zoneId
+      _startHeartbeat(zoneId)
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Failed to load network data'
       error.value = msg
@@ -47,9 +73,15 @@ export const useNetworkStore = defineStore('network', () => {
    * Clears cached network data (e.g., when changing zones or logging out).
    */
   function clearNetwork() {
+    _stopHeartbeat()
     networkData.value = null
     currentZoneId.value = null
     error.value = null
+  }
+
+  // Stop heartbeat on page unload (tab close / refresh).
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', _stopHeartbeat)
   }
 
   return {
@@ -62,3 +94,4 @@ export const useNetworkStore = defineStore('network', () => {
     clearNetwork,
   }
 })
+
