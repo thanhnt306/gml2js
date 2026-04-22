@@ -79,6 +79,24 @@ export const useNetworkStore = defineStore('network', () => {
     error.value = null
   }
 
+  async function startAutoConnect(zoneId: number, distance: number, diameter: number) {
+    try {
+      const resp = await api.post(`/geometry/zones/${zoneId}/network/auto-connect`, {
+        distance,
+        diameter
+      })
+      return resp.data.taskId
+    } catch (err) {
+      console.error('Failed to start auto-connect:', err)
+      throw err
+    }
+  }
+
+  async function checkAutoConnectStatus(taskId: string) {
+    const resp = await api.get(`/geometry/zones/network/tasks/${taskId}`)
+    return resp.data
+  }
+
   // Stop heartbeat on page unload (tab close / refresh).
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', _stopHeartbeat)
@@ -92,6 +110,8 @@ export const useNetworkStore = defineStore('network', () => {
     setNetworkData,
     loadNetworkForZone,
     clearNetwork,
+    startAutoConnect,
+    checkAutoConnectStatus,
   }
 })
 

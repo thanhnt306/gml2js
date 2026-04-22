@@ -16,51 +16,25 @@
         <div class="flex flex-col space-y-6 pl-4">
 
           <!-- Step 1: Display Configuration -->
-          <StepItem
-            label="Display Configuration"
-            number="1"
-            :isExpanded="currentStep === 1"
-            @toggle="toggleStep(1)"
-          >
+          <StepItem label="Display Configuration" number="1" :isExpanded="currentStep === 1" @toggle="toggleStep(1)">
             <DisplayConfiguration :zoneId="Number(props.zoneId)" @next="goToStep(2)" />
           </StepItem>
 
           <!-- Step 2: Add Network Files -->
-          <StepItem
-            label="Add Network Files"
-            number="2"
-            :isExpanded="currentStep === 2"
-            @toggle="toggleStep(2)"
-          >
-              <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" @start-task="startPolling" />
+          <StepItem label="Add Network Files" number="2" :isExpanded="currentStep === 2" @toggle="toggleStep(2)">
+            <AddNetworkFiles :zoneId="props.zoneId" @next="handleFilesSubmitted" @start-task="startPolling" />
           </StepItem>
 
           <!-- Step 3: Choose Inlet Node (disabled until processing completes) -->
-          <StepItem
-            ref="step3Ref"
-            label="Choose Inlet Node"
-            number="3"
-            :isExpanded="currentStep === 3"
-            :disabled="!isStep3Enabled"
-            @toggle="toggleStep(3)"
-          >
-            <ChooseInletNode
-              ref="chooseInletRef"
-              :networkData="currentNetworkData"
-              :isLoading="isProcessing"
-              :isActive="showBlockingOverlay"
-              @done="handleInletDone"
-            />
+          <StepItem ref="step3Ref" label="Choose Inlet Node" number="3" :isExpanded="currentStep === 3"
+            :disabled="!isStep3Enabled" @toggle="toggleStep(3)">
+            <ChooseInletNode ref="chooseInletRef" :networkData="currentNetworkData" :isLoading="isProcessing"
+              :isActive="showBlockingOverlay" @done="handleInletDone" />
           </StepItem>
 
           <!-- Step 4: Overview and Edit -->
-          <StepItem
-            label="Overview and Edit network data"
-            number="4"
-            :isExpanded="false"
-            :isLastStep="true"
-            @toggle="goToOverview"
-          />
+          <StepItem label="Overview and Edit network data" number="4" :isExpanded="false" :isLastStep="true"
+            @toggle="goToOverview" />
 
         </div>
       </div>
@@ -69,33 +43,27 @@
     <!-- ===== PANEL 1: Overview & Edit ===== -->
     <div v-show="currentView === 'overview'" class="flex flex-col w-full h-full">
       <div class="flex items-center gap-3 mb-6 pl-4">
-        <span class="w-9 h-9 rounded-full bg-[#529B26] flex items-center justify-center font-montserrat font-bold text-white text-sm flex-shrink-0">
+        <span
+          class="w-9 h-9 rounded-full bg-[#529B26] flex items-center justify-center font-montserrat font-bold text-white text-sm flex-shrink-0">
           4
         </span>
         <h2 class="text-white font-montserrat font-semibold text-lg flex-1">
           General review and Edit network data
         </h2>
         <div class="flex items-center gap-3">
-          <button
-            @click="currentView = 'steps'"
-            class="px-5 py-1.5 rounded font-montserrat font-semibold text-sm text-white bg-[#6A6A6A] hover:bg-[#808080] transition-colors"
-          >
+          <button @click="currentView = 'steps'"
+            class="px-5 py-1.5 rounded font-montserrat font-semibold text-sm text-white bg-[#6A6A6A] hover:bg-[#808080] transition-colors">
             Back to previous steps
           </button>
-          <button
-            @click="handleFinish"
-            class="px-5 py-1.5 rounded font-montserrat font-semibold text-sm text-white bg-[#529B26] hover:bg-[#6cc537] transition-colors"
-          >
+          <button @click="handleFinish"
+            class="px-5 py-1.5 rounded font-montserrat font-semibold text-sm text-white bg-[#529B26] hover:bg-[#6cc537] transition-colors">
             Finish
           </button>
         </div>
       </div>
       <div class="flex-1 overflow-y-auto custom-scrollbar">
-        <OverviewEditNetwork
-          :gis-rows="gisRows"
-          :link-rows="linkRows"
-          :node-rows="nodeRows"
-        />
+        <OverviewEditNetwork :gis-rows="gisRows" :link-rows="linkRows" :node-rows="nodeRows"
+          @quick-fix="handleQuickFix" />
       </div>
     </div>
 
@@ -107,29 +75,26 @@
           <!-- Visual: single div using box-shadow to cast dark overlay.
                border-radius matches ChooseInletNode so corners are naturally curved.
                pointer-events: none so map remains fully clickable. -->
-          <div
-            class="absolute pointer-events-none"
-            :style="{
-              top: cutout.top + 'px',
-              left: cutout.left + 'px',
-              width: cutout.width + 'px',
-              height: cutout.height + 'px',
-              borderRadius: '15px',
-              boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55)',
-            }"
-          ></div>
+          <div class="absolute pointer-events-none" :style="{
+            top: cutout.top + 'px',
+            left: cutout.left + 'px',
+            width: cutout.width + 'px',
+            height: cutout.height + 'px',
+            borderRadius: '15px',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55)',
+          }"></div>
 
           <!-- Click-blocking: 4 invisible panels that capture pointer events
                on the dark surrounding area (corners are the tiny gap zones,
                clicks there fall through harmlessly to the page behind). -->
-          <div class="absolute top-0 left-0 right-0 pointer-events-auto"
-               :style="{ height: cutout.top + 'px' }"></div>
+          <div class="absolute top-0 left-0 right-0 pointer-events-auto" :style="{ height: cutout.top + 'px' }"></div>
           <div class="absolute left-0 right-0 bottom-0 pointer-events-auto"
-               :style="{ top: (cutout.top + cutout.height) + 'px' }"></div>
+            :style="{ top: (cutout.top + cutout.height) + 'px' }"></div>
           <div class="absolute left-0 pointer-events-auto"
-               :style="{ top: cutout.top + 'px', height: cutout.height + 'px', width: cutout.left + 'px' }"></div>
+            :style="{ top: cutout.top + 'px', height: cutout.height + 'px', width: cutout.left + 'px' }"></div>
           <div class="absolute right-0 pointer-events-auto"
-               :style="{ top: cutout.top + 'px', height: cutout.height + 'px', left: (cutout.left + cutout.width) + 'px' }"></div>
+            :style="{ top: cutout.top + 'px', height: cutout.height + 'px', left: (cutout.left + cutout.width) + 'px' }">
+          </div>
         </div>
       </Transition>
     </Teleport>
@@ -137,22 +102,18 @@
     <!-- ===== PROGRESS DIALOG ===== -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
-          v-if="showProgressDialog"
-          class="fixed inset-0 z-[60] flex items-center justify-center"
-        >
+        <div v-if="showProgressDialog" class="fixed inset-0 z-[60] flex items-center justify-center">
           <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-          <div class="relative bg-[#1e1e1e] border border-white/10 rounded-xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
+          <div
+            class="relative bg-[#1e1e1e] border border-white/10 rounded-xl p-8 shadow-2xl text-center max-w-sm w-full mx-4">
             <h3 class="text-white font-montserrat font-semibold text-lg mb-4">Processing Network</h3>
-            
+
             <!-- Progress Bar -->
             <div class="w-full h-2 bg-[#333] rounded-full overflow-hidden mb-4">
-              <div 
-                class="h-full bg-[#529B26] transition-all duration-300 ease-out"
-                :style="{ width: progressPercent + '%' }"
-              ></div>
+              <div class="h-full bg-[#529B26] transition-all duration-300 ease-out"
+                :style="{ width: progressPercent + '%' }"></div>
             </div>
-            
+
             <div class="flex justify-between items-center mb-2">
               <span class="text-[#A7A7A7] font-inter text-sm">{{ progressMessage }}</span>
               <span class="text-white font-montserrat font-semibold text-sm">{{ Math.round(progressPercent) }}%</span>
@@ -172,8 +133,9 @@ import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
-import { toGisRows, toLinkRows, toNodeRows } from '@/services/NetworkGraphService'
+import { toGisRows, toLinkRows, toNodeRows, parseNetworkResponse } from '@/services/NetworkGraphService'
 import ZoneService from '@/services/ZoneService'
+import NetworkService from '@/services/NetworkService'
 import { useNetworkStore } from '@/stores/network'
 
 const networkStore = useNetworkStore()
@@ -282,53 +244,161 @@ const progressMessage = ref('Initializing...')
 let pollInterval: ReturnType<typeof setInterval> | null = null
 
 const startPolling = (taskId: string) => {
-    if (!props.zoneId) return
+  if (!props.zoneId) return
 
-    showProgressDialog.value = true
-    isProcessing.value = true
-    progressPercent.value = 0
-    progressMessage.value = 'Loading network data from server...'
+  showProgressDialog.value = true
+  isProcessing.value = true
+  progressPercent.value = 0
+  progressMessage.value = 'Loading network data from server...'
 
-    if (pollInterval) clearInterval(pollInterval)
+  if (pollInterval) clearInterval(pollInterval)
 
-    let isPolling = false
-    pollInterval = setInterval(async () => {
-        if (isPolling) return
-        isPolling = true
-        try {
-            const { parseNetworkResponse } = await import('@/services/NetworkGraphService')
-            const NetworkService = (await import('@/services/NetworkService')).default
-            
-            const status = await NetworkService.getParseTaskStatus(props.zoneId as string, taskId)
-            progressPercent.value = status.percentage || 0
-            progressMessage.value = status.message || 'Processing...'
+  let isPolling = false
+  pollInterval = setInterval(async () => {
+    if (isPolling) return
+    isPolling = true
+    try {
+      const status = await NetworkService.getParseTaskStatus(props.zoneId as string, taskId)
+      progressPercent.value = status.percentage || 0
+      progressMessage.value = status.message || 'Processing...'
 
-            if (status.completed) {
-                if (pollInterval) clearInterval(pollInterval)
-                pollInterval = null
-                
-                if (status.hasError) {
-                    throw new Error(status.errorDetails || 'Backend syntax error parsing shapefiles')
-                }
+      if (status.completed) {
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = null
 
-                if (status.network) {
-                    const parsedData = parseNetworkResponse(status.network, Number(props.zoneId) || 0)
-                    handleFilesSubmitted(parsedData)
-                } else {
-                    handleFilesSubmitted(null)
-                }
-            }
-        } catch (error) {
-            if (pollInterval) clearInterval(pollInterval)
-            pollInterval = null
-            console.error('[NetworkSetupWizard] Error polling task:', error)
-            alert('Error parsing network: ' + (error instanceof Error ? error.message : 'Unknown error'))
-            showProgressDialog.value = false
-            isProcessing.value = false
-        } finally {
-            isPolling = false
+        if (status.hasError) {
+          throw new Error(status.errorDetails || 'Backend syntax error parsing shapefiles')
         }
-    }, 1000)
+
+        if (status.network) {
+          const parsedData = parseNetworkResponse(status.network, Number(props.zoneId) || 0)
+          handleFilesSubmitted(parsedData)
+        } else {
+          handleFilesSubmitted(null)
+        }
+      }
+    } catch (error) {
+      if (pollInterval) clearInterval(pollInterval)
+      pollInterval = null
+      console.error('[NetworkSetupWizard] Error polling task:', error)
+      alert('Error parsing network: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      showProgressDialog.value = false
+      isProcessing.value = false
+    } finally {
+      isPolling = false
+    }
+  }, 1000)
+}
+
+const handleQuickFix = async (action: string) => {
+  if (action.startsWith('Auto-connect')) {
+    const parts = action.split(':')
+    const distance = parseFloat(parts[1])
+    const diameter = parseFloat(parts[2])
+
+    if (props.zoneId) {
+      try {
+        const taskId = await networkStore.startAutoConnect(Number(props.zoneId), distance, diameter)
+        startAutoConnectPolling(taskId)
+      } catch (err) {
+        alert('Failed to start auto-connect task.')
+      }
+    }
+  }
+}
+
+const startAutoConnectPolling = (taskId: string) => {
+  if (!props.zoneId) return
+
+  showProgressDialog.value = true
+  isProcessing.value = true
+  progressPercent.value = 0
+  progressMessage.value = 'Auto-connecting disconnected components...'
+
+  if (pollInterval) clearInterval(pollInterval)
+
+  let isPolling = false
+  pollInterval = setInterval(async () => {
+    if (isPolling) return
+    isPolling = true
+    try {
+      const status = await networkStore.checkAutoConnectStatus(taskId)
+      progressPercent.value = status.percentage || 0
+      progressMessage.value = status.message || 'Processing...'
+
+      if (status.completed) {
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = null
+
+        if (status.hasError) {
+          throw new Error(status.errorDetails || 'Auto-connect failed')
+        }
+
+        if (status.network) {
+          const data = networkStore.networkData
+          if (data) {
+            const removedSet = new Set(status.network.removed_pipes || [])
+            data.pipes = data.pipes.filter(p => !removedSet.has(p.label))
+
+            const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
+
+            for (const n of (status.network.added_nodes || [])) {
+              const newNode = {
+                label: n.label,
+                elev_m: 0,
+                x: n.longitude,
+                y: n.latitude,
+                node_type: 'junction',
+                status: 'Unknown',
+                dma_id: Number(props.zoneId) || 0,
+                raw: {}
+              }
+              data.nodes.push(newNode)
+              nodesMap.set(n.label, newNode)
+            }
+
+            for (const p of (status.network.added_pipes || [])) {
+              const n1 = nodesMap.get(p.start_node)
+              const n2 = nodesMap.get(p.stop_node)
+              const path: [number, number][] = []
+              if (n1 && n2) {
+                path.push([n1.x, n1.y], [n2.x, n2.y])
+              }
+
+              data.pipes.push({
+                label: p.label,
+                start_node: p.start_node,
+                stop_node: p.stop_node,
+                length_m: p.length,
+                d_mm: p.diameter,
+                material: 'No Information',
+                status: 'Unknown',
+                dma_id: Number(props.zoneId) || 0,
+                path: path,
+                raw: {}
+              })
+            }
+
+            // Force reactivity
+            networkStore.setNetworkData({ ...data }, Number(props.zoneId))
+          }
+        }
+
+        showProgressDialog.value = false
+        isProcessing.value = false
+        alert('Auto-connect completed successfully!')
+      }
+    } catch (error) {
+      if (pollInterval) clearInterval(pollInterval)
+      pollInterval = null
+      console.error('[NetworkSetupWizard] Error polling auto-connect task:', error)
+      alert('Error auto-connecting: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      showProgressDialog.value = false
+      isProcessing.value = false
+    } finally {
+      isPolling = false
+    }
+  }, 1000)
 }
 
 /**
@@ -444,14 +514,23 @@ const handleFinish = () => {
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #4B5563;
   border-radius: 20px;
 }
 
-.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
