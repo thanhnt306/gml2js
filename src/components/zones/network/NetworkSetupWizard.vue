@@ -446,20 +446,30 @@ const startReCheckConnectedPolling = (taskId: string) => {
         isProcessing.value = false
 
         if (status.network) {
-          const connectedCount: number   = status.network.total_connected_nodes    ?? 0
-          const disconnectedCount: number = status.network.total_disconnected_nodes ?? 0
-          const disconnectedGroups: string[][] = status.network.disconnected_components ?? []
+          const disconnectedNodesCount: number = status.network.total_disconnected_nodes ?? 0
+          const disconnectedJunctions: string[][] = status.network.disconnected_junctions ?? []
+          const disconnectedPipes: string[][] = status.network.disconnected_pipes ?? []
 
           let msg = `✅ Re-check completed.\n\n`
-          msg += `Connected nodes: ${connectedCount}\n`
-          msg += `Disconnected nodes: ${disconnectedCount}\n`
-          if (disconnectedGroups.length > 0) {
-            msg += `\nDisconnected components (${disconnectedGroups.length}):\n`
-            disconnectedGroups.slice(0, 5).forEach((group, i) => {
+          msg += `Disconnected nodes: ${disconnectedNodesCount}\n`
+          
+          if (disconnectedJunctions.length > 0) {
+            msg += `\nDisconnected junction groups (${disconnectedJunctions.length}):\n`
+            disconnectedJunctions.slice(0, 5).forEach((group, i) => {
               msg += `  [${i + 1}] ${group.slice(0, 3).join(', ')}${group.length > 3 ? ` ... +${group.length - 3} more` : ''}\n`
             })
-            if (disconnectedGroups.length > 5) {
-              msg += `  ... and ${disconnectedGroups.length - 5} more components\n`
+            if (disconnectedJunctions.length > 5) {
+              msg += `  ... and ${disconnectedJunctions.length - 5} more groups\n`
+            }
+          }
+
+          if (disconnectedPipes.length > 0) {
+            msg += `\nDisconnected pipe groups (${disconnectedPipes.length}):\n`
+            disconnectedPipes.slice(0, 5).forEach((group, i) => {
+              msg += `  [${i + 1}] ${group.slice(0, 3).join(', ')}${group.length > 3 ? ` ... +${group.length - 3} more` : ''}\n`
+            })
+            if (disconnectedPipes.length > 5) {
+              msg += `  ... and ${disconnectedPipes.length - 5} more groups\n`
             }
           }
           alert(msg)
