@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import api from '@/services/api'
 import { parseNetworkResponse } from '@/services/NetworkGraphService'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
