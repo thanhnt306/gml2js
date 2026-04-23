@@ -18,6 +18,7 @@ export interface ZoneResponse {
   name: string;
   description: string;
   favorite: boolean;
+  inletLabels?: string[];
   // Other potential fields
 }
 

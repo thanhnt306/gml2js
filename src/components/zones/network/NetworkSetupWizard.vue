@@ -137,8 +137,10 @@ import { toGisRows, toLinkRows, toNodeRows, parseNetworkResponse } from '@/servi
 import ZoneService from '@/services/ZoneService'
 import NetworkService from '@/services/NetworkService'
 import { useNetworkStore } from '@/stores/network'
+import { useZoneStore } from '@/stores/zone'
 
 const networkStore = useNetworkStore()
+const zoneStore = useZoneStore()
 
 const props = defineProps<{
   zoneId?: string
@@ -304,6 +306,18 @@ const handleQuickFix = async (action: string) => {
         alert('Failed to start auto-connect task.')
       }
     }
+  } else if (action === 'Re-check connected') {
+    if (props.zoneId) {
+      try {
+        const zoneIdNum = Number(props.zoneId)
+        const zone = zoneStore.zones.find(z => z.id === zoneIdNum)
+        const inletLabels = zone?.inletLabels || []
+        const taskId = await networkStore.startReCheckConnected(zoneIdNum, inletLabels)
+        startReCheckConnectedPolling(taskId)
+      } catch (err) {
+        alert('Failed to start re-check connected task.')
+      }
+    }
   }
 }
 
@@ -401,6 +415,69 @@ const startAutoConnectPolling = (taskId: string) => {
   }, 1000)
 }
 
+const startReCheckConnectedPolling = (taskId: string) => {
+  if (!props.zoneId) return
+
+  showProgressDialog.value = true
+  isProcessing.value = true
+  progressPercent.value = 0
+  progressMessage.value = 'Checking network connectivity...'
+
+  if (pollInterval) clearInterval(pollInterval)
+
+  let isPolling = false
+  pollInterval = setInterval(async () => {
+    if (isPolling) return
+    isPolling = true
+    try {
+      const status = await networkStore.checkAutoConnectStatus(taskId)
+      progressPercent.value = status.percentage || 0
+      progressMessage.value = status.message || 'Processing...'
+
+      if (status.completed) {
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = null
+
+        if (status.hasError) {
+          throw new Error(status.errorDetails || 'Re-check connected failed')
+        }
+
+        showProgressDialog.value = false
+        isProcessing.value = false
+
+        if (status.network) {
+          const connectedCount: number   = status.network.total_connected_nodes    ?? 0
+          const disconnectedCount: number = status.network.total_disconnected_nodes ?? 0
+          const disconnectedGroups: string[][] = status.network.disconnected_components ?? []
+
+          let msg = `✅ Re-check completed.\n\n`
+          msg += `Connected nodes: ${connectedCount}\n`
+          msg += `Disconnected nodes: ${disconnectedCount}\n`
+          if (disconnectedGroups.length > 0) {
+            msg += `\nDisconnected components (${disconnectedGroups.length}):\n`
+            disconnectedGroups.slice(0, 5).forEach((group, i) => {
+              msg += `  [${i + 1}] ${group.slice(0, 3).join(', ')}${group.length > 3 ? ` ... +${group.length - 3} more` : ''}\n`
+            })
+            if (disconnectedGroups.length > 5) {
+              msg += `  ... and ${disconnectedGroups.length - 5} more components\n`
+            }
+          }
+          alert(msg)
+        }
+      }
+    } catch (error) {
+      if (pollInterval) clearInterval(pollInterval)
+      pollInterval = null
+      console.error('[NetworkSetupWizard] Error polling re-check task:', error)
+      alert('Error re-checking: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      showProgressDialog.value = false
+      isProcessing.value = false
+    } finally {
+      isPolling = false
+    }
+  }, 1000)
+}
+
 /**
  * Called when Step 2 emits 'next' after role confirmation.
  * @param networkData - parsed NetworkGraphData from the save-roles response, or null
@@ -484,6 +561,7 @@ const handleInletDone = async (labels: string[]) => {
       inlets: labels
     })
 
+    zoneStore.setInletLabels(Number(props.zoneId) || 0, labels)
     progressPercent.value = 100
   } catch (error) {
     console.error('[NetworkSetupWizard] Failed to save inlets:', error)

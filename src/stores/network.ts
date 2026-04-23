@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import api from '@/services/api'
 import { parseNetworkResponse } from '@/services/NetworkGraphService'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
@@ -8,10 +8,10 @@ import type { NetworkGraphData } from '@/services/NetworkGraphService'
 const HEARTBEAT_INTERVAL_MS = 5 * 60 * 1000
 
 export const useNetworkStore = defineStore('network', () => {
-  const networkData = ref<NetworkGraphData | null>(null)
-  const currentZoneId = ref<number | null>(null)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const networkData    = ref<NetworkGraphData | null>(null)
+  const currentZoneId  = ref<number | null>(null)
+  const isLoading      = ref(false)
+  const error          = ref<string | null>(null)
 
   // Internal heartbeat timer — never exposed outside the store.
   let _heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -39,9 +39,9 @@ export const useNetworkStore = defineStore('network', () => {
    * No API call needed — data is already available.
    */
   function setNetworkData(data: NetworkGraphData, zoneId: number) {
-    networkData.value = data
+    networkData.value   = data
     currentZoneId.value = zoneId
-    error.value = null
+    error.value         = null
     _startHeartbeat(zoneId)
   }
 
@@ -52,11 +52,11 @@ export const useNetworkStore = defineStore('network', () => {
    */
   async function loadNetworkForZone(zoneId: number) {
     if (currentZoneId.value === zoneId && networkData.value) return // already cached
-    isLoading.value = true
+    isLoading.value  = true
     networkData.value = null
-    error.value = null
+    error.value       = null
     try {
-      const resp = await api.get(`/gis/zones/${zoneId}/network`)
+      const resp        = await api.get(`/gis/zones/${zoneId}/network`)
       networkData.value = parseNetworkResponse(resp.data, zoneId)
       currentZoneId.value = zoneId
       _startHeartbeat(zoneId)
@@ -74,9 +74,9 @@ export const useNetworkStore = defineStore('network', () => {
    */
   function clearNetwork() {
     _stopHeartbeat()
-    networkData.value = null
+    networkData.value   = null
     currentZoneId.value = null
-    error.value = null
+    error.value         = null
   }
 
   async function startAutoConnect(zoneId: number, distance: number, diameter: number) {
@@ -97,6 +97,16 @@ export const useNetworkStore = defineStore('network', () => {
     return resp.data
   }
 
+  /**
+   * Starts a Re-check connected task on the backend.
+   */
+  async function startReCheckConnected(zoneId: number, inletLabels: string[]) {
+    const resp = await api.post(`/geometry/zones/${zoneId}/network/re-check-connected`, {
+      inlet_labels: inletLabels
+    })
+    return resp.data.taskId as string
+  }
+
   // Stop heartbeat on page unload (tab close / refresh).
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', _stopHeartbeat)
@@ -112,6 +122,6 @@ export const useNetworkStore = defineStore('network', () => {
     clearNetwork,
     startAutoConnect,
     checkAutoConnectStatus,
+    startReCheckConnected,
   }
 })
-
