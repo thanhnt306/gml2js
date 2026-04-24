@@ -446,33 +446,50 @@ const startReCheckConnectedPolling = (taskId: string) => {
         isProcessing.value = false
 
         if (status.network) {
-          const disconnectedNodesCount: number = status.network.total_disconnected_nodes ?? 0
-          const disconnectedJunctions: string[][] = status.network.disconnected_junctions ?? []
-          const disconnectedPipes: string[][] = status.network.disconnected_pipes ?? []
-
-          let msg = `✅ Re-check completed.\n\n`
-          msg += `Disconnected nodes: ${disconnectedNodesCount}\n`
+          const newIssues = status.network.new_issues ?? []
           
-          if (disconnectedJunctions.length > 0) {
-            msg += `\nDisconnected junction groups (${disconnectedJunctions.length}):\n`
-            disconnectedJunctions.slice(0, 5).forEach((group, i) => {
-              msg += `  [${i + 1}] ${group.slice(0, 3).join(', ')}${group.length > 3 ? ` ... +${group.length - 3} more` : ''}\n`
-            })
-            if (disconnectedJunctions.length > 5) {
-              msg += `  ... and ${disconnectedJunctions.length - 5} more groups\n`
+          if (newIssues.length === 0) {
+            alert('✅ Re-check completed.\n\nAll nodes are connected to the inlet!')
+          } else {
+            // 1. Remove existing disconnected issues from store
+            if (networkStore.networkData) {
+              networkStore.networkData.issues = networkStore.networkData.issues.filter(issue =>
+                issue.name !== 'Disconnected Component ' && issue.name !== 'Object Disconnected '
+              )
             }
-          }
 
-          if (disconnectedPipes.length > 0) {
-            msg += `\nDisconnected pipe groups (${disconnectedPipes.length}):\n`
-            disconnectedPipes.slice(0, 5).forEach((group, i) => {
-              msg += `  [${i + 1}] ${group.slice(0, 3).join(', ')}${group.length > 3 ? ` ... +${group.length - 3} more` : ''}\n`
-            })
-            if (disconnectedPipes.length > 5) {
-              msg += `  ... and ${disconnectedPipes.length - 5} more groups\n`
+            // 2. Add new issues from backend
+            const formattedIssues = newIssues.map((issue: any) => ({
+              uid: issue.uid,
+              name: issue.name,
+              describe: issue.describe,
+              level: issue.level,
+              dma_id: issue.dma_id,
+              related_junctions: issue.related_objects?.junctions || [],
+              related_pipes: issue.related_objects?.pipes || [],
+              status: 'Unknown' // Default status for new issues
+            }))
+
+            if (networkStore.networkData) {
+              networkStore.networkData.issues.push(...formattedIssues)
+              // Force reactivity update
+              networkStore.setNetworkData({ ...networkStore.networkData }, Number(props.zoneId) || 0)
             }
+
+            // 3. Display summary message
+            let msg = `⚠️ Re-check completed.\n\n`
+            msg += `Found ${newIssues.length} disconnected issue(s).\n`
+            
+            newIssues.slice(0, 5).forEach((issue: any, i: number) => {
+              const jCount = issue.related_objects?.junctions?.length || 0
+              const pCount = issue.related_objects?.pipes?.length || 0
+              msg += `  [${i + 1}] ${issue.name} (${jCount} nodes, ${pCount} pipes)\n`
+            })
+            if (newIssues.length > 5) {
+              msg += `  ... and ${newIssues.length - 5} more issues\n`
+            }
+            alert(msg)
           }
-          alert(msg)
         }
       }
     } catch (error) {
