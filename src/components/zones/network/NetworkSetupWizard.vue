@@ -460,13 +460,15 @@ const startReCheckConnectedPolling = (taskId: string) => {
 
             // 2. Add new issues from backend
             const formattedIssues = newIssues.map((issue: any) => ({
-              uid: issue.uid,
+              id: issue.id,
               name: issue.name,
-              describe: issue.describe,
+              description: issue.description,
               level: issue.level,
               dma_id: issue.dma_id,
-              related_junctions: issue.related_objects?.junctions || [],
-              related_pipes: issue.related_objects?.pipes || [],
+              relatedObjectIds: {
+                junctionIds: issue.relatedObjectIds?.junctionIds || [],
+                pipelineIds: issue.relatedObjectIds?.pipelineIds || []
+              },
               status: 'Unknown' // Default status for new issues
             }))
 
@@ -481,8 +483,8 @@ const startReCheckConnectedPolling = (taskId: string) => {
             msg += `Found ${newIssues.length} disconnected issue(s).\n`
             
             newIssues.slice(0, 5).forEach((issue: any, i: number) => {
-              const jCount = issue.related_objects?.junctions?.length || 0
-              const pCount = issue.related_objects?.pipes?.length || 0
+              const jCount = issue.relatedObjectIds?.junctionIds?.length || 0
+              const pCount = issue.relatedObjectIds?.pipelineIds?.length || 0
               msg += `  [${i + 1}] ${issue.name} (${jCount} nodes, ${pCount} pipes)\n`
             })
             if (newIssues.length > 5) {
