@@ -62,7 +62,7 @@
         </div>
       </div>
       <div class="flex-1 overflow-y-auto custom-scrollbar">
-        <OverviewEditNetwork :gis-rows="gisRows" :link-rows="linkRows" :node-rows="nodeRows"
+        <OverviewEditNetwork :gis-rows="gisRows" :link-rows="linkRows" :node-rows="nodeRows" :export-groups="exportGroups"
           @quick-fix="handleQuickFix" />
       </div>
     </div>
@@ -167,6 +167,7 @@ const currentNetworkData = computed(() => networkStore.networkData || networkDat
 const gisRows = computed(() => currentNetworkData.value ? toGisRows(currentNetworkData.value.issues) : [])
 const linkRows = computed(() => currentNetworkData.value ? toLinkRows(currentNetworkData.value.pipes) : [])
 const nodeRows = computed(() => currentNetworkData.value ? toNodeRows(currentNetworkData.value.nodes) : [])
+const exportGroups = computed(() => currentNetworkData.value?.exportGroups || [])
 
 // Refs
 const stepsContainer = ref<HTMLElement | null>(null)

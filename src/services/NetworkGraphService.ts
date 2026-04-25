@@ -14,8 +14,8 @@
  *   }
  * }
  */
-import type { GisRow, LinkRow, NodeRow } from '@/components/zones/network/tables/types'
-export type { GisRow, LinkRow, NodeRow }
+import type { GisRow, LinkRow, NodeRow, AttributeGroup } from '@/components/zones/network/tables/types'
+export type { GisRow, LinkRow, NodeRow, AttributeGroup }
 
 export interface NetworkNode {
   label:     string
@@ -66,6 +66,7 @@ export interface NetworkGraphData {
   pipes:  NetworkPipe[]
   extent: NetworkExtent
   issues: GisIssue[]
+  exportGroups: AttributeGroup[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -189,12 +190,33 @@ export function parseNetworkResponse(rawNetwork: any, dmaId: number): NetworkGra
     },
   }))
 
+  const exportGroups: AttributeGroup[] = []
+  const options = rawNetwork?.export_options || {}
+  const mapKeyToLabel: Record<string, string> = {
+    'MainPipe': 'Main Pipe',
+    'LateralPipe': 'Lateral Pipe',
+    'Meter': 'Meter',
+    'Logger': 'Logger',
+    'Valve': 'Valve',
+    'Pump': 'Pump',
+    'Tank': 'Tank'
+  }
+
+  for (const [backendKey, label] of Object.entries(mapKeyToLabel)) {
+    const attrObj = options[backendKey] || {}
+    const attributes = []
+    for (const attrName of Object.keys(attrObj)) {
+      attributes.push({ name: attrName, selected: true })
+    }
+    exportGroups.push({ label, attributes })
+  }
+
   console.log(
     `[NetworkGraphService] Parsed ${nodes.length} nodes, ${pipes.length} pipes,`,
-    `${issues.length} issues from API response`
+    `${issues.length} issues, ${exportGroups.length} export groups from API response`
   )
 
-  return { nodes, pipes, extent, issues }
+  return { nodes, pipes, extent, issues, exportGroups }
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // Converters: NetworkGraphData → table rows
