@@ -389,7 +389,7 @@ const startAutoConnectPolling = (taskId: string) => {
                 status: 'Unknown',
                 dma_id: Number(props.zoneId) || 0,
                 path: path,
-                raw: {}
+                raw: p.extra_attributes || {}
               })
             }
 
