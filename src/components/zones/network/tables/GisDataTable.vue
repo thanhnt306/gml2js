@@ -27,6 +27,12 @@
           </button>
         </template>
 
+        <template #description="{ item }">
+          <div class="w-full truncate text-[#1A1A1A] font-inter text-[13px] text-left px-2" :title="item.description">
+            {{ item.description }}
+          </div>
+        </template>
+
         <template #severity="{ item }">
           <span
             v-if="item.severity"
