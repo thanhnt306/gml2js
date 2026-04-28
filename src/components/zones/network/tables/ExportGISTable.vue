@@ -17,8 +17,8 @@
           {{ group.label }}:
         </span>
         
-        <!-- Chips Scroll Container -->
-        <div class="flex-1 overflow-x-auto custom-scrollbar-horizontal flex items-center gap-2 py-1.5 pr-2">
+        <!-- Chips Container -->
+        <div class="flex-1 flex flex-wrap items-center gap-2 py-1.5 pr-2">
           <!-- Chips -->
           <label
             v-for="attr in group.attributes"
@@ -88,9 +88,4 @@ watch(() => props.groups, (newGroups) => {
 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #8A8A8A; border-radius: 10px; }
-
-.custom-scrollbar-horizontal::-webkit-scrollbar { width: 6px; height: 6px; }
-.custom-scrollbar-horizontal::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar-horizontal::-webkit-scrollbar-thumb { background-color: #8A8A8A; border-radius: 10px; }
-.custom-scrollbar-horizontal::-webkit-scrollbar-thumb:hover { background-color: #5D5D5D; }
 </style>
