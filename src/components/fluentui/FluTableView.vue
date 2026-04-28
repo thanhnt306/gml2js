@@ -27,7 +27,7 @@
        <div 
          v-for="(item, rowIndex) in items" 
          :key="rowIndex"
-         class="flex w-full min-h-[44px] transition-colors duration-150 items-stretch"
+         class="flex w-full max-w-full overflow-hidden min-h-[44px] transition-colors duration-150 items-stretch"
          :class="[
             striped ? 'border-b border-[#8A8A8A]/50' : 'rounded-[8px] border hover:bg-white/5 cursor-pointer',
             striped && theme === 'light' ? (rowIndex % 2 === 0 ? 'bg-[#BEBEBE]' : 'bg-[#D3D3D3]') : '',
@@ -43,7 +43,7 @@
             :class="[
               col.align === 'left' ? 'justify-start text-left' : col.align === 'right' ? 'justify-end text-right' : 'justify-center text-center'
             ]"
-             :style="{ width: col.width ? col.width : (100 / columns.length) + '%' }"
+             :style="{ width: col.width ? col.width : (100 / columns.length) + '%', maxWidth: col.width ? col.width : (100 / columns.length) + '%', flexShrink: 0, flexGrow: 0 }"
           >
              <!-- Check if slot exists for this column -->
              <template v-if="$slots[col.key]">
