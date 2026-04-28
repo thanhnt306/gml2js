@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col h-full">
     <!-- Table using FluTableView -->
-    <div class="flex-1 overflow-auto max-h-[476px] custom-scrollbar">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden max-h-[476px] custom-scrollbar w-full">
       <FluTableViewAny
         v-if="paginatedRows.length > 0"
         :columns="displayColumns"
