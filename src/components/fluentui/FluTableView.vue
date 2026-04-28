@@ -7,7 +7,7 @@
       <div 
         v-for="(col, index) in columns" 
         :key="index"
-        class="px-3 text-white font-montserrat font-bold text-sm flex items-center h-full"
+        class="px-3 text-white font-montserrat font-bold text-sm flex items-center h-full min-w-0"
         :class="[
           col.align === 'left' ? 'justify-start' : col.align === 'right' ? 'justify-end' : 'justify-center'
         ]"
@@ -39,7 +39,7 @@
           <div 
             v-for="(col, colIndex) in columns" 
             :key="colIndex"
-            class="flex items-center py-2 px-3 overflow-hidden"
+            class="flex items-center py-2 px-3 overflow-hidden min-w-0"
             :class="[
               col.align === 'left' ? 'justify-start text-left' : col.align === 'right' ? 'justify-end text-right' : 'justify-center text-center'
             ]"
