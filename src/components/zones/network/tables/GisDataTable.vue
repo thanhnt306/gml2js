@@ -28,9 +28,11 @@
         </template>
 
         <template #description="{ item }">
-          <div class="w-full truncate text-[#1A1A1A] font-inter text-[13px] text-left px-2" :title="item.description">
-            {{ item.description }}
-          </div>
+          <span
+            class="w-full text-[#1A1A1A] font-inter text-[13px] text-left px-2"
+            style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+            :title="item.description"
+          >{{ truncateDesc(item.description) }}</span>
         </template>
 
         <template #severity="{ item }">
@@ -75,6 +77,51 @@ import { ref, computed } from 'vue'
 import FluTableView from '../../../fluentui/FluTableView.vue'
 import type { GisRow } from './types'
 const FluTableViewAny = FluTableView as any
+
+// --------------- Adaptive description truncation ---------------
+// Root cause: very long text (3+ tooltip lines) has a huge min-content-size
+// that propagates through the flex chain even past overflow:hidden.
+// Solution: pre-truncate in JS so the DOM never sees the full long string.
+
+const DESC_COL_RATIO = 0.53   // must match column width %
+const DESC_PADDING   = 40     // cell px-3 (24px) + span px-2 (16px)
+const FONT_SPEC      = '13px Inter, ui-sans-serif, system-ui, sans-serif'
+
+let _ctx: CanvasRenderingContext2D | null = null
+const getCtx = () => {
+  if (!_ctx) {
+    try {
+      const c = document.createElement('canvas')
+      _ctx = c.getContext('2d')
+      if (_ctx) _ctx.font = FONT_SPEC
+    } catch { /* ignore */ }
+  }
+  return _ctx
+}
+
+const px = (s: string) => getCtx()?.measureText(s).width ?? s.length * 7.5
+
+const truncateDesc = (raw: string): string => {
+  if (!raw) return raw
+  // Normalize: collapse newlines to spaces so 3-line text becomes one long line.
+  // This matches what white-space:nowrap does in the browser.
+  const text = raw.replace(/\r?\n/g, ' ').trim()
+
+  // Budget = 53% of viewport width minus padding. A bit conservative is fine.
+  const budget = window.innerWidth * DESC_COL_RATIO - DESC_PADDING
+  if (px(text) <= budget) return text
+
+  // Binary search for the longest prefix that fits with '...'
+  const ellipsis = '...'
+  const ellW = px(ellipsis)
+  let lo = 0, hi = text.length
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1
+    px(text.slice(0, mid)) <= budget - ellW ? (lo = mid) : (hi = mid - 1)
+  }
+  return text.slice(0, lo) + ellipsis
+}
+// ---------------------------------------------------------------
 
 interface TableColumn {
   title: string
