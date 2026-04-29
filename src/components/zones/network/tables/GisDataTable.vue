@@ -101,17 +101,25 @@ const getCtx = () => {
 
 const px = (s: string) => getCtx()?.measureText(s).width ?? s.length * 7.5
 
+// Memoization: cache truncation results per (text + viewport width).
+// On re-renders with unchanged data, results are returned instantly (O(1)).
+const _cache = new Map<string, string>()
+let _cachedVW = -1
+
 const truncateDesc = (raw: string): string => {
   if (!raw) return raw
-  // Normalize: collapse newlines to spaces so 3-line text becomes one long line.
-  // This matches what white-space:nowrap does in the browser.
   const text = raw.replace(/\r?\n/g, ' ').trim()
 
-  // Budget = 53% of viewport width minus padding. A bit conservative is fine.
-  const budget = window.innerWidth * DESC_COL_RATIO - DESC_PADDING
-  if (px(text) <= budget) return text
+  const vw = window.innerWidth
+  // Invalidate cache when viewport width changes (e.g. window resize)
+  if (vw !== _cachedVW) { _cache.clear(); _cachedVW = vw }
 
-  // Binary search for the longest prefix that fits with '...'
+  if (_cache.has(text)) return _cache.get(text)!
+
+  const budget = vw * DESC_COL_RATIO - DESC_PADDING
+  if (px(text) <= budget) { _cache.set(text, text); return text }
+
+  // Binary search: O(log n) measureText calls, ~8 iterations for 300-char text
   const ellipsis = '...'
   const ellW = px(ellipsis)
   let lo = 0, hi = text.length
@@ -119,9 +127,12 @@ const truncateDesc = (raw: string): string => {
     const mid = (lo + hi + 1) >> 1
     px(text.slice(0, mid)) <= budget - ellW ? (lo = mid) : (hi = mid - 1)
   }
-  return text.slice(0, lo) + ellipsis
+  const result = text.slice(0, lo) + ellipsis
+  _cache.set(text, result)
+  return result
 }
 // ---------------------------------------------------------------
+
 
 interface TableColumn {
   title: string
