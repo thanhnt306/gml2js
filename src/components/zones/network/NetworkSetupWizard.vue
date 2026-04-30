@@ -449,16 +449,32 @@ const startReCheckConnectedPolling = (taskId: string) => {
         if (status.network) {
           const newIssues = status.network.new_issues ?? []
           
+          // 1. Always remove existing disconnected issues from store first
+          if (networkStore.networkData) {
+            networkStore.networkData.issues = networkStore.networkData.issues.filter(issue =>
+              issue.name !== 'Disconnected Component ' && issue.name !== 'Object Disconnected '
+            )
+          }
+
+          // 2. Patch node/pipe status strings so NodeDataTable & LinkDataTable update reactively
+          const junctionStatusStrings: Record<string, string> = status.network.junction_status_strings ?? {}
+          const pipeStatusStrings: Record<string, string> = status.network.pipe_status_strings ?? {}
+          if (networkStore.networkData) {
+            for (const node of networkStore.networkData.nodes) {
+              if (junctionStatusStrings[node.label] !== undefined) {
+                node.status = junctionStatusStrings[node.label]
+              }
+            }
+            for (const pipe of networkStore.networkData.pipes) {
+              if (pipeStatusStrings[pipe.label] !== undefined) {
+                pipe.status = pipeStatusStrings[pipe.label]
+              }
+            }
+          }
+
           if (newIssues.length === 0) {
             alert('✅ Re-check completed.\n\nAll nodes are connected to the inlet!')
           } else {
-            // 1. Remove existing disconnected issues from store
-            if (networkStore.networkData) {
-              networkStore.networkData.issues = networkStore.networkData.issues.filter(issue =>
-                issue.name !== 'Disconnected Component ' && issue.name !== 'Object Disconnected '
-              )
-            }
-
             // 2. Add new issues from backend
             const formattedIssues = newIssues.map((issue: any) => ({
               id: issue.id,
