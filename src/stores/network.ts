@@ -79,11 +79,12 @@ export const useNetworkStore = defineStore('network', () => {
     error.value         = null
   }
 
-  async function startAutoConnect(zoneId: number, distance: number, diameter: number) {
+  async function startAutoConnect(zoneId: number, distance: number, diameter: number, inletLabels: string[] = []) {
     try {
       const resp = await api.post(`/geometry/zones/${zoneId}/network/auto-connect`, {
         distance,
-        diameter
+        diameter,
+        inlet_labels: inletLabels
       })
       return resp.data.taskId
     } catch (err) {

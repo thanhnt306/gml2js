@@ -301,7 +301,10 @@ const handleQuickFix = async (action: string) => {
 
     if (props.zoneId) {
       try {
-        const taskId = await networkStore.startAutoConnect(Number(props.zoneId), distance, diameter)
+        const zoneIdNum = Number(props.zoneId)
+        const zone = zoneStore.zones.find(z => z.id === zoneIdNum)
+        const inletLabels = zone?.inletLabels || []
+        const taskId = await networkStore.startAutoConnect(zoneIdNum, distance, diameter, inletLabels)
         startAutoConnectPolling(taskId)
       } catch (err) {
         alert('Failed to start auto-connect task.')
@@ -332,6 +335,57 @@ const startAutoConnectPolling = (taskId: string) => {
 
   if (pollInterval) clearInterval(pollInterval)
 
+  // Helper: apply auto-connect resultData (added/removed nodes & pipes) to networkStore
+  const applyAutoConnectResult = (network: any) => {
+    const data = networkStore.networkData
+    if (!data) return
+
+    const removedSet = new Set(network.removed_pipes || [])
+    data.pipes = data.pipes.filter(p => !removedSet.has(p.label))
+
+    const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
+
+    for (const n of (network.added_nodes || [])) {
+      const newNode = {
+        label: n.label,
+        elev_m: 0,
+        x: n.longitude,
+        y: n.latitude,
+        node_type: 'junction',
+        status: 'Unknown',
+        dma_id: Number(props.zoneId) || 0,
+        raw: {}
+      }
+      data.nodes.push(newNode)
+      nodesMap.set(n.label, newNode)
+    }
+
+    for (const p of (network.added_pipes || [])) {
+      const n1 = nodesMap.get(p.start_node)
+      const n2 = nodesMap.get(p.stop_node)
+      const path: [number, number][] = []
+      if (n1 && n2) {
+        path.push([n1.x, n1.y], [n2.x, n2.y])
+      }
+
+      data.pipes.push({
+        label: p.label,
+        start_node: p.start_node,
+        stop_node: p.stop_node,
+        length_m: p.length,
+        d_mm: p.diameter,
+        material: 'No Information',
+        status: 'Unknown',
+        dma_id: Number(props.zoneId) || 0,
+        path: path,
+        raw: p.extra_attributes || {}
+      })
+    }
+
+    // Force reactivity
+    networkStore.setNetworkData({ ...data }, Number(props.zoneId))
+  }
+
   let isPolling = false
   pollInterval = setInterval(async () => {
     if (isPolling) return
@@ -341,67 +395,55 @@ const startAutoConnectPolling = (taskId: string) => {
       progressPercent.value = status.percentage || 0
       progressMessage.value = status.message || 'Processing...'
 
+      // First checkpoint: Auto-connect phase done, rebuild is starting
+      if (status.message === 'Completed Auto-Connect' && status.resultData) {
+        applyAutoConnectResult(status.resultData)
+      }
+
       if (status.completed) {
         if (pollInterval) clearInterval(pollInterval)
         pollInterval = null
 
         if (status.hasError) {
-          throw new Error(status.errorDetails || 'Auto-connect failed')
+          throw new Error(status.errorDetails || 'Auto-connect + rebuild failed')
         }
 
-        if (status.network) {
-          const data = networkStore.networkData
-          if (data) {
-            const removedSet = new Set(status.network.removed_pipes || [])
-            data.pipes = data.pipes.filter(p => !removedSet.has(p.label))
+        // Second checkpoint: Rebuild phase done — apply result and show warnings
+        if (status.resultData) {
+          applyAutoConnectResult(status.resultData)
 
-            const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
+          // Collect warnings from rebuild result
+          const warnings: string[] = []
+          const rd = status.resultData
 
-            for (const n of (status.network.added_nodes || [])) {
-              const newNode = {
-                label: n.label,
-                elev_m: 0,
-                x: n.longitude,
-                y: n.latitude,
-                node_type: 'junction',
-                status: 'Unknown',
-                dma_id: Number(props.zoneId) || 0,
-                raw: {}
-              }
-              data.nodes.push(newNode)
-              nodesMap.set(n.label, newNode)
-            }
-
-            for (const p of (status.network.added_pipes || [])) {
-              const n1 = nodesMap.get(p.start_node)
-              const n2 = nodesMap.get(p.stop_node)
-              const path: [number, number][] = []
-              if (n1 && n2) {
-                path.push([n1.x, n1.y], [n2.x, n2.y])
-              }
-
-              data.pipes.push({
-                label: p.label,
-                start_node: p.start_node,
-                stop_node: p.stop_node,
-                length_m: p.length,
-                d_mm: p.diameter,
-                material: 'No Information',
-                status: 'Unknown',
-                dma_id: Number(props.zoneId) || 0,
-                path: path,
-                raw: p.extra_attributes || {}
-              })
-            }
-
-            // Force reactivity
-            networkStore.setNetworkData({ ...data }, Number(props.zoneId))
+          const unmodellable: string[] = rd.unmodellable_junctions || []
+          if (unmodellable.length > 0) {
+            warnings.push(`⚠️ ${unmodellable.length} junction(s) could not be modelled as valve/pump:\n  ${unmodellable.slice(0, 5).join(', ')}${unmodellable.length > 5 ? ` ... and ${unmodellable.length - 5} more` : ''}`)
           }
-        }
 
-        showProgressDialog.value = false
-        isProcessing.value = false
-        alert('Auto-connect completed successfully!')
+          const disconnectedValvePump: string[] = rd.disconnected_valve_pump_junctions || []
+          if (disconnectedValvePump.length > 0) {
+            warnings.push(`⚠️ ${disconnectedValvePump.length} valve/pump junction(s) remain in disconnected regions:\n  ${disconnectedValvePump.slice(0, 5).join(', ')}${disconnectedValvePump.length > 5 ? ` ... and ${disconnectedValvePump.length - 5} more` : ''}`)
+          }
+
+          const notConnected: string[] = rd.not_connected_junctions || []
+          if (notConnected.length > 0) {
+            warnings.push(`⚠️ ${notConnected.length} junction(s) could not be connected to the network:\n  ${notConnected.slice(0, 5).join(', ')}${notConnected.length > 5 ? ` ... and ${notConnected.length - 5} more` : ''}`)
+          }
+
+          showProgressDialog.value = false
+          isProcessing.value = false
+
+          if (warnings.length > 0) {
+            alert(`Auto-connect and rebuild completed with warnings:\n\n${warnings.join('\n\n')}`)
+          } else {
+            alert('✅ Auto-connect and rebuild completed successfully!')
+          }
+        } else {
+          showProgressDialog.value = false
+          isProcessing.value = false
+          alert('✅ Auto-connect and rebuild completed successfully!')
+        }
       }
     } catch (error) {
       if (pollInterval) clearInterval(pollInterval)
@@ -446,8 +488,8 @@ const startReCheckConnectedPolling = (taskId: string) => {
         showProgressDialog.value = false
         isProcessing.value = false
 
-        if (status.network) {
-          const newIssues = status.network.new_issues ?? []
+        if (status.resultData) {
+          const newIssues = status.resultData.new_issues ?? []
           
           // 1. Always remove existing disconnected issues from store first
           if (networkStore.networkData) {
@@ -457,8 +499,8 @@ const startReCheckConnectedPolling = (taskId: string) => {
           }
 
           // 2. Patch node/pipe status strings so NodeDataTable & LinkDataTable update reactively
-          const junctionStatusStrings: Record<string, string> = status.network.junction_status_strings ?? {}
-          const pipeStatusStrings: Record<string, string> = status.network.pipe_status_strings ?? {}
+          const junctionStatusStrings: Record<string, string> = status.resultData.junction_status_strings ?? {}
+          const pipeStatusStrings: Record<string, string> = status.resultData.pipe_status_strings ?? {}
           if (networkStore.networkData) {
             for (const node of networkStore.networkData.nodes) {
               if (junctionStatusStrings[node.label] !== undefined) {
