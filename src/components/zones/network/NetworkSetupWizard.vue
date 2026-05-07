@@ -62,8 +62,8 @@
         </div>
       </div>
       <div class="flex-1 overflow-y-auto custom-scrollbar">
-        <OverviewEditNetwork :gis-rows="gisRows" :link-rows="linkRows" :node-rows="nodeRows" :export-groups="exportGroups"
-          @quick-fix="handleQuickFix" />
+        <OverviewEditNetwork :gis-rows="gisRows" :link-rows="linkRows" :node-rows="nodeRows"
+          :export-groups="exportGroups" @quick-fix="handleQuickFix" />
       </div>
     </div>
 
@@ -340,8 +340,15 @@ const startAutoConnectPolling = (taskId: string) => {
     const data = networkStore.networkData
     if (!data) return
 
-    const removedSet = new Set(network.removed_pipes || [])
-    data.pipes = data.pipes.filter(p => !removedSet.has(p.label))
+    // Remove pipes
+    const removedPipesSet = new Set(network.removed_pipes || [])
+    data.pipes = data.pipes.filter(p => !removedPipesSet.has(p.label))
+
+    // Remove nodes (rebuild phase can remove junctions)
+    const removedNodesSet = new Set(network.removed_nodes || [])
+    if (removedNodesSet.size > 0) {
+      data.nodes = data.nodes.filter(n => !removedNodesSet.has(n.label))
+    }
 
     const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
 
@@ -387,6 +394,54 @@ const startAutoConnectPolling = (taskId: string) => {
   }
 
   let isPolling = false
+  let lastEventIndex = -1
+
+  // Helper: apply re-check resultData (status strings + issues) to networkStore
+  const applyReCheckResult = (rd: any) => {
+    const data = networkStore.networkData
+    if (!data) return
+
+    const newIssues = rd.new_issues ?? []
+
+    // 1. Remove existing disconnected issues
+    data.issues = data.issues.filter((issue: any) =>
+      issue.name !== 'Disconnected Component ' && issue.name !== 'Object Disconnected '
+    )
+
+    // 2. Patch node/pipe status strings
+    const junctionStatusStrings: Record<string, string> = rd.junction_status_strings ?? {}
+    const pipeStatusStrings: Record<string, string> = rd.pipe_status_strings ?? {}
+    for (const node of data.nodes) {
+      if (junctionStatusStrings[node.label] !== undefined) {
+        node.status = junctionStatusStrings[node.label]
+      }
+    }
+    for (const pipe of data.pipes) {
+      if (pipeStatusStrings[pipe.label] !== undefined) {
+        pipe.status = pipeStatusStrings[pipe.label]
+      }
+    }
+
+    // 3. Add new issues from re-check
+    if (newIssues.length > 0) {
+      const formattedIssues = newIssues.map((issue: any) => ({
+        id: issue.id,
+        name: issue.name,
+        description: issue.description,
+        level: issue.level,
+        dma_id: issue.dma_id,
+        relatedObjectIds: {
+          junctionIds: issue.relatedObjectIds?.junctionIds || [],
+          pipelineIds: issue.relatedObjectIds?.pipelineIds || []
+        },
+        status: 'Unknown'
+      }))
+      data.issues.push(...formattedIssues)
+    }
+
+    networkStore.setNetworkData({ ...data }, Number(props.zoneId))
+  }
+
   pollInterval = setInterval(async () => {
     if (isPolling) return
     isPolling = true
@@ -395,9 +450,18 @@ const startAutoConnectPolling = (taskId: string) => {
       progressPercent.value = status.percentage || 0
       progressMessage.value = status.message || 'Processing...'
 
-      // First checkpoint: Auto-connect phase done, rebuild is starting
-      if (status.message === 'Completed Auto-Connect' && status.resultData) {
-        applyAutoConnectResult(status.resultData)
+      // Process all unhandled checkpoint events in order
+      const events: any[] = status.events || []
+      const newEvents = events.slice(lastEventIndex + 1)
+      for (const event of newEvents) {
+        lastEventIndex++
+        if (event.message === 'Completed Auto-Connect') {
+          applyAutoConnectResult(event.resultData)
+        } else if (event.message === 'Re-check done, starting rebuild...') {
+          applyReCheckResult(event.resultData)
+        } else if (event.message === 'Rebuild completed') {
+          applyAutoConnectResult(event.resultData)
+        }
       }
 
       if (status.completed) {
@@ -408,14 +472,12 @@ const startAutoConnectPolling = (taskId: string) => {
           throw new Error(status.errorDetails || 'Auto-connect + rebuild failed')
         }
 
-        // Second checkpoint: Rebuild phase done — apply result and show warnings
-        if (status.resultData) {
-          applyAutoConnectResult(status.resultData)
+        // Show warnings from rebuild result (last event's resultData)
+        const rebuildEvent = (status.events || []).findLast((e: any) => e.message === 'Rebuild completed')
+        const rd = rebuildEvent?.resultData ?? status.resultData
+        const warnings: string[] = []
 
-          // Collect warnings from rebuild result
-          const warnings: string[] = []
-          const rd = status.resultData
-
+        if (rd) {
           const unmodellable: string[] = rd.unmodellable_junctions || []
           if (unmodellable.length > 0) {
             warnings.push(`⚠️ ${unmodellable.length} junction(s) could not be modelled as valve/pump:\n  ${unmodellable.slice(0, 5).join(', ')}${unmodellable.length > 5 ? ` ... and ${unmodellable.length - 5} more` : ''}`)
@@ -430,18 +492,14 @@ const startAutoConnectPolling = (taskId: string) => {
           if (notConnected.length > 0) {
             warnings.push(`⚠️ ${notConnected.length} junction(s) could not be connected to the network:\n  ${notConnected.slice(0, 5).join(', ')}${notConnected.length > 5 ? ` ... and ${notConnected.length - 5} more` : ''}`)
           }
+        }
 
-          showProgressDialog.value = false
-          isProcessing.value = false
+        showProgressDialog.value = false
+        isProcessing.value = false
 
-          if (warnings.length > 0) {
-            alert(`Auto-connect and rebuild completed with warnings:\n\n${warnings.join('\n\n')}`)
-          } else {
-            alert('✅ Auto-connect and rebuild completed successfully!')
-          }
+        if (warnings.length > 0) {
+          alert(`Auto-connect and rebuild completed with warnings:\n\n${warnings.join('\n\n')}`)
         } else {
-          showProgressDialog.value = false
-          isProcessing.value = false
           alert('✅ Auto-connect and rebuild completed successfully!')
         }
       }
@@ -490,7 +548,7 @@ const startReCheckConnectedPolling = (taskId: string) => {
 
         if (status.resultData) {
           const newIssues = status.resultData.new_issues ?? []
-          
+
           // 1. Always remove existing disconnected issues from store first
           if (networkStore.networkData) {
             networkStore.networkData.issues = networkStore.networkData.issues.filter(issue =>
@@ -540,7 +598,7 @@ const startReCheckConnectedPolling = (taskId: string) => {
             // 3. Display summary message
             let msg = `⚠️ Re-check completed.\n\n`
             msg += `Found ${newIssues.length} disconnected issue(s).\n`
-            
+
             newIssues.slice(0, 5).forEach((issue: any, i: number) => {
               const jCount = issue.relatedObjectIds?.junctionIds?.length || 0
               const pCount = issue.relatedObjectIds?.pipelineIds?.length || 0
