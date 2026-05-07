@@ -95,6 +95,7 @@ export const useNetworkStore = defineStore('network', () => {
 
   async function checkAutoConnectStatus(taskId: string) {
     const resp = await api.get(`/geometry/zones/network/tasks/${taskId}`)
+    console.log('[checkAutoConnectStatus] raw resp.data:', JSON.stringify(resp.data).slice(0, 300))
     return resp.data
   }
 
