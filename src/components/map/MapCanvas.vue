@@ -38,6 +38,9 @@
       </div>
     </Transition>
 
+    <!-- Map Legend -->
+    <MapLegend v-if="networkStore.networkData" />
+
     <!-- Map Tools/Overlays -->
     <slot></slot>
   </div>
@@ -47,6 +50,7 @@
 import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { useNetworkMap } from '@/composables/useNetworkMap'
 import { useNetworkStore } from '@/stores/network'
+import MapLegend from './MapLegend.vue'
 
 const mapViewDiv = ref<HTMLDivElement | null>(null)
 const networkStore = useNetworkStore()

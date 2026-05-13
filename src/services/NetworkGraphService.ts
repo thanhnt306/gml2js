@@ -18,29 +18,35 @@ import type { GisRow, LinkRow, NodeRow, AttributeGroup } from '@/components/zone
 export type { GisRow, LinkRow, NodeRow, AttributeGroup }
 
 export interface NetworkNode {
-  label:     string
-  elev_m:    number
-  x:         number   // longitude (WGS84)
-  y:         number   // latitude  (WGS84)
+  label: string
+  elev_m: number
+  x: number   // longitude (WGS84)
+  y: number   // latitude  (WGS84)
   /** Normalised lowercase type string: 'junction' | 'meter' | 'valve' | 'pump' | 'tank' | 'reservoir' | 'inlet' */
   node_type: string
-  status:    string
-  dma_id:    number
+  status: string
+  dma_id: number
+  valve_type: string
+  valve_size: number
+  pump_model: string
   /** All raw attributes from getAttributes() */
   raw: Record<string, unknown>
 }
 
 export interface NetworkPipe {
-  label:      string
+  label: string
   start_node: string
-  stop_node:  string
-  length_m:   number
-  d_mm:       number
-  material:   string
-  status:     string
-  dma_id:     number
+  stop_node: string
+  length_m: number
+  d_mm: number
+  material: string
+  status: string
+  dma_id: number
+  valve_type: string
+  valve_size: number
+  pump_model: string
   /** GeoJSON coordinates [[lon,lat], ...] – may contain intermediate vertices */
-  path:       [number, number][]
+  path: [number, number][]
   /** All raw attributes from getAttributes() */
   raw: Record<string, unknown>
 }
@@ -51,9 +57,9 @@ export interface NetworkExtent {
 }
 
 export interface GisIssue {
-  id:          string
-  name:        string
-  level:       string
+  id: string
+  name: string
+  level: string
   description: string
   relatedObjectIds: {
     junctionIds: string[]
@@ -62,8 +68,8 @@ export interface GisIssue {
 }
 
 export interface NetworkGraphData {
-  nodes:  NetworkNode[]
-  pipes:  NetworkPipe[]
+  nodes: NetworkNode[]
+  pipes: NetworkPipe[]
   extent: NetworkExtent
   issues: GisIssue[]
   exportGroups: AttributeGroup[]
@@ -75,13 +81,13 @@ export interface NetworkGraphData {
 // useNetworkMap expects lowercase keys.
 // ─────────────────────────────────────────────────────────────────────────────
 const NODE_TYPE_MAP: Record<string, NetworkNode['node_type']> = {
-  junction:   'junction',
-  meter:      'meter',
-  valve:      'valve',
-  pump:       'pump',
-  tank:       'tank',
-  reservoir:  'reservoir',
-  inlet:      'inlet',
+  junction: 'junction',
+  meter: 'meter',
+  valve: 'valve',
+  pump: 'pump',
+  tank: 'tank',
+  reservoir: 'reservoir',
+  inlet: 'inlet',
 }
 
 function normaliseNodeType(raw: string | undefined): string {
@@ -105,16 +111,19 @@ function parseNodesFC(fc: any, dmaId: number): NetworkNode[] {
 
     const [lon, lat] = coords
     nodes.push({
-      label:     String(props['LABEL'] ?? props['label'] ?? ''),
-      elev_m:    Number(props['ELEVATION (m)'] ?? props['elevation'] ?? 0),
-      x:         lon,
-      y:         lat,
+      label: String(props['LABEL'] ?? props['label'] ?? ''),
+      elev_m: Number(props['ELEVATION (m)'] ?? props['elevation'] ?? 0),
+      x: lon,
+      y: lat,
       node_type: normaliseNodeType(
         String(props['NODE_TYPE'] ?? props['node_type'] ?? 'junction')
       ),
-      status:    String(props['STATUS'] ?? props['status'] ?? ''),
-      dma_id:    dmaId,
-      raw:       props,
+      status: String(props['STATUS'] ?? props['status'] ?? ''),
+      dma_id: dmaId,
+      valve_type: String(props['VALVE_TYPE'] ?? props['valve_type'] ?? ''),
+      valve_size: Number(props['VALVE_SIZE'] ?? props['valve_size'] ?? 0),
+      pump_model: String(props['PUMP_MODEL'] ?? props['pump_model'] ?? ''),
+      raw: props,
     })
   }
   return nodes
@@ -129,16 +138,19 @@ function parsePipesFC(fc: any, dmaId: number): NetworkPipe[] {
     const coords = (feature.geometry?.coordinates ?? []) as [number, number][]
 
     pipes.push({
-      label:      String(props['LABEL'] ?? props['label'] ?? ''),
+      label: String(props['LABEL'] ?? props['label'] ?? ''),
       start_node: String(props['START_NODE'] ?? props['start_node'] ?? ''),
-      stop_node:  String(props['STOP_NODE']  ?? props['stop_node']  ?? ''),
-      length_m:   Number(props['LENGTH (m)'] ?? props['length_m']   ?? 0),
-      d_mm:       Number(props['DIAMETER (mm)'] ?? props['d_mm']    ?? 0),
-      material:   String(props['MATERIAL'] ?? props['material']      ?? ''),
-      status:     String(props['STATUS'] ?? props['status']          ?? ''),
-      dma_id:     dmaId,
-      path:       coords,
-      raw:        props,
+      stop_node: String(props['STOP_NODE'] ?? props['stop_node'] ?? ''),
+      length_m: Number(props['LENGTH (m)'] ?? props['length_m'] ?? 0),
+      d_mm: Number(props['DIAMETER (mm)'] ?? props['d_mm'] ?? 0),
+      material: String(props['MATERIAL'] ?? props['material'] ?? ''),
+      status: String(props['STATUS'] ?? props['status'] ?? ''),
+      dma_id: dmaId,
+      valve_type: String(props['VALVE_TYPE'] ?? props['valve_type'] ?? ''),
+      valve_size: Number(props['VALVE_SIZE'] ?? props['valve_size'] ?? 0),
+      pump_model: String(props['PUMP_MODEL'] ?? props['pump_model'] ?? ''),
+      path: coords,
+      raw: props,
     })
   }
   return pipes
@@ -176,13 +188,13 @@ function computeExtent(nodes: NetworkNode[], pipes: NetworkPipe[]): NetworkExten
  * @param dmaId       - The zone/DMA ID (numeric)
  */
 export function parseNetworkResponse(rawNetwork: any, dmaId: number): NetworkGraphData {
-  const nodes  = parseNodesFC(rawNetwork?.nodes, dmaId)
-  const pipes  = parsePipesFC(rawNetwork?.pipes, dmaId)
+  const nodes = parseNodesFC(rawNetwork?.nodes, dmaId)
+  const pipes = parsePipesFC(rawNetwork?.pipes, dmaId)
   const extent = computeExtent(nodes, pipes)
   const issues: GisIssue[] = (rawNetwork?.issues ?? []).map((iss: any) => ({
-    id:          String(iss.id          ?? ''),
-    name:        String(iss.name        ?? iss.level ?? ''),
-    level:       String(iss.level       ?? ''),
+    id: String(iss.id ?? ''),
+    name: String(iss.name ?? iss.level ?? ''),
+    level: String(iss.level ?? ''),
     description: String(iss.description ?? ''),
     relatedObjectIds: {
       junctionIds: Array.isArray(iss.relatedObjectIds?.junctionIds) ? iss.relatedObjectIds.junctionIds.map(String) : [],
@@ -235,10 +247,10 @@ export function toGisRows(issues: GisIssue[]): GisRow[] {
     else if (levelUpper === 'WARNING' || levelUpper === 'IMPACTED') severity = 'IMPACTED'
 
     return {
-      issue:                iss.name || iss.level,
-      description:          iss.description,
+      issue: iss.name || iss.level,
+      description: iss.description,
       severity,
-      related_obj_id:       iss.id,
+      related_obj_id: iss.id,
       related_junction_ids: iss.relatedObjectIds.junctionIds,
       related_pipeline_ids: iss.relatedObjectIds.pipelineIds,
     }
@@ -251,13 +263,13 @@ export function toGisRows(issues: GisIssue[]): GisRow[] {
  */
 export function toLinkRows(pipes: NetworkPipe[]): LinkRow[] {
   return pipes.map(pipe => ({
-    label:      pipe.label,
+    label: pipe.label,
     start_node: pipe.start_node,
-    stop_node:  pipe.stop_node,
-    length:     pipe.length_m ?? pipe.raw['LENGTH (m)'] ?? 0,
-    diameter:   pipe.d_mm    ?? pipe.raw['DIAMETER (mm)'] ?? 0,
-    material:   pipe.material || String(pipe.raw['MATERIAL'] ?? ''),
-    status:     pipe.status || 'Unknown',
+    stop_node: pipe.stop_node,
+    length: pipe.length_m ?? pipe.raw['LENGTH (m)'] ?? 0,
+    diameter: pipe.d_mm ?? pipe.raw['DIAMETER (mm)'] ?? 0,
+    material: pipe.material || String(pipe.raw['MATERIAL'] ?? ''),
+    status: pipe.status || 'Unknown',
   }))
 }
 
@@ -267,10 +279,10 @@ export function toLinkRows(pipes: NetworkPipe[]): LinkRow[] {
  */
 export function toNodeRows(nodes: NetworkNode[]): NodeRow[] {
   return nodes.map(node => ({
-    label:     node.label,
+    label: node.label,
     elevation: node.elev_m,
-    latitude:  Number(node.y.toFixed(6)),
+    latitude: Number(node.y.toFixed(6)),
     longitude: Number(node.x.toFixed(6)),
-    status:    node.status || 'Unknown',
+    status: node.status || 'Unknown',
   }))
 }

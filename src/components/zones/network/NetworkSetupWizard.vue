@@ -355,12 +355,15 @@ const startAutoConnectPolling = (taskId: string) => {
     for (const n of (network.added_nodes || [])) {
       const newNode = {
         label: n.label,
-        elev_m: 0,
+        elev_m: n.elevation,
         x: n.longitude,
         y: n.latitude,
-        node_type: 'junction',
+        node_type: n.node_type || 'junction',
         status: 'Unknown',
-        dma_id: Number(props.zoneId) || 0,
+        dma_id: n.dma_id || Number(props.zoneId) || 0,
+        valve_type: n.valve_type || '',
+        valve_size: n.valve_size || 0,
+        pump_model: n.pump_model || '',
         raw: {}
       }
       data.nodes.push(newNode)
@@ -381,9 +384,12 @@ const startAutoConnectPolling = (taskId: string) => {
         stop_node: p.stop_node,
         length_m: p.length,
         d_mm: p.diameter,
-        material: 'No Information',
-        status: 'Unknown',
-        dma_id: Number(props.zoneId) || 0,
+        material: p.material || 'No Information',
+        status: p.status_string || 'Unknown',
+        dma_id: p.dma_id || Number(props.zoneId) || 0,
+        valve_type: p.valve_type || '',
+        valve_size: p.valve_size || 0,
+        pump_model: p.pump_model || '',
         path: path,
         raw: p.extra_attributes || {}
       })

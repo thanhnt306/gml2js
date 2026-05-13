@@ -16,6 +16,7 @@ import Polyline from '@arcgis/core/geometry/Polyline'
 import Extent from '@arcgis/core/geometry/Extent'
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol'
 import SimpleLineSymbol from '@arcgis/core/symbols/SimpleLineSymbol'
+import TextSymbol from '@arcgis/core/symbols/TextSymbol'
 import TileInfo from '@arcgis/core/layers/support/TileInfo'
 import SpatialReference from '@arcgis/core/geometry/SpatialReference'
 import SketchViewModel from '@arcgis/core/widgets/Sketch/SketchViewModel'
@@ -163,6 +164,17 @@ export function useNetworkMap() {
         pathCoords = [[startNode.x, startNode.y], [stopNode.x, stopNode.y]]
       }
 
+      const pipeFieldInfos = [
+        { fieldName: 'start_node', label: 'Start Node' },
+        { fieldName: 'stop_node',  label: 'Stop Node' },
+        { fieldName: 'length_m',   label: 'Length (m)' },
+        { fieldName: 'd_mm',       label: 'Diameter (mm)' },
+        { fieldName: 'material',   label: 'Material' },
+      ]
+      if (pipe.valve_type) pipeFieldInfos.push({ fieldName: 'valve_type', label: 'Valve Type' })
+      if (pipe.valve_size) pipeFieldInfos.push({ fieldName: 'valve_size', label: 'Valve Size' })
+      if (pipe.pump_model) pipeFieldInfos.push({ fieldName: 'pump_model', label: 'Pump Model' })
+
       const pipeGraphic = new Graphic({
         geometry: new Polyline({
           paths: [pathCoords],
@@ -181,30 +193,69 @@ export function useNetworkMap() {
           d_mm:       pipe.d_mm,
           material:   pipe.material,
           type: 'pipe',
+          valve_type: pipe.valve_type,
+          valve_size: pipe.valve_size,
+          pump_model: pipe.pump_model,
         },
         popupTemplate: {
           title: 'Pipe: {label}',
           content: [
             {
               type: 'fields',
-              fieldInfos: [
-                { fieldName: 'start_node', label: 'Start Node' },
-                { fieldName: 'stop_node',  label: 'Stop Node' },
-                { fieldName: 'length_m',   label: 'Length (m)' },
-                { fieldName: 'd_mm',       label: 'Diameter (mm)' },
-                { fieldName: 'material',   label: 'Material' },
-              ]
+              fieldInfos: pipeFieldInfos
             }
           ]
         }
       })
 
       pipeLayer.value.add(pipeGraphic)
+
+      // If the pipe acts as a valve or pump, add an icon at its midpoint
+      if (pipe.valve_type || pipe.pump_model) {
+        // Find midpoint
+        const startPt = pathCoords[0]
+        const stopPt = pathCoords[pathCoords.length - 1]
+        const midLon = (startPt[0] + stopPt[0]) / 2
+        const midLat = (startPt[1] + stopPt[1]) / 2
+
+        const isValve = !!pipe.valve_type
+        
+        const iconGraphic = new Graphic({
+          geometry: new Point({
+            longitude: midLon,
+            latitude: midLat,
+            spatialReference: { wkid: 4326 }
+          }),
+          symbol: new TextSymbol({
+            text: isValve ? '\u29D3' : '\u24C5', // ⧓ for valve, Ⓟ for pump
+            color: 'white',
+            haloColor: isValve ? '#E57373' : '#81C784',
+            haloSize: '2px',
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }),
+          attributes: pipeGraphic.attributes,
+          popupTemplate: pipeGraphic.popupTemplate
+        })
+
+        pipeLayer.value.add(iconGraphic)
+      }
     }
 
 
     // Render nodes as Point graphics
     for (const node of data.nodes) {
+      const nodeFieldInfos = [
+        { fieldName: 'label', label: 'Label' },
+        { fieldName: 'node_type', label: 'Type' },
+        { fieldName: 'elev_m', label: 'Elevation (m)' },
+      ]
+      if (node.valve_type) nodeFieldInfos.push({ fieldName: 'valve_type', label: 'Valve Type' })
+      if (node.valve_size) nodeFieldInfos.push({ fieldName: 'valve_size', label: 'Valve Size' })
+      if (node.pump_model) nodeFieldInfos.push({ fieldName: 'pump_model', label: 'Pump Model' })
+
       const nodeGraphic = new Graphic({
         geometry: new Point({
           longitude: node.x,
@@ -225,17 +276,16 @@ export function useNetworkMap() {
           node_type: node.node_type,
           elev_m: node.elev_m,
           type: 'node',
+          valve_type: node.valve_type,
+          valve_size: node.valve_size,
+          pump_model: node.pump_model,
         },
         popupTemplate: {
           title: '{node_type}: {label}',
           content: [
             {
               type: 'fields',
-              fieldInfos: [
-                { fieldName: 'label', label: 'Label' },
-                { fieldName: 'node_type', label: 'Type' },
-                { fieldName: 'elev_m', label: 'Elevation (m)' },
-              ]
+              fieldInfos: nodeFieldInfos
             }
           ]
         }
