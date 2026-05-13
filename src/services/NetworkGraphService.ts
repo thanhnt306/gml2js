@@ -90,9 +90,19 @@ const NODE_TYPE_MAP: Record<string, NetworkNode['node_type']> = {
   inlet: 'inlet',
 }
 
-function normaliseNodeType(raw: string | undefined): string {
+export function normaliseNodeType(raw: string | undefined): string {
   if (!raw) return 'junction'
-  const lower = raw.toLowerCase()
+  const lower = raw.toLowerCase().trim()
+  
+  if (lower === 'u' || lower === 'junction') return 'junction'
+  if (lower === 'e' || lower === 'meter') return 'meter'
+  if (lower === 'v' || lower === 'valve') return 'valve'
+  if (lower === 'p' || lower === 'pump') return 'pump'
+  if (lower === 't' || lower === 'tank') return 'tank'
+  if (lower === 'r' || lower === 'reservoir') return 'reservoir'
+  if (lower === 'l' || lower === 'logger') return 'junction' // map logger to junction
+  if (lower === 'inlet') return 'inlet'
+
   return NODE_TYPE_MAP[lower] ?? 'junction'
 }
 

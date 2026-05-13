@@ -227,7 +227,7 @@ export function useNetworkMap() {
             spatialReference: { wkid: 4326 }
           }),
           symbol: new TextSymbol({
-            text: isValve ? '\u29D3' : '\u24C5', // ⧓ for valve, Ⓟ for pump
+            text: isValve ? 'V' : 'P', // 'V' for valve, 'P' for pump
             color: 'white',
             haloColor: isValve ? '#E57373' : '#81C784',
             haloSize: '2px',

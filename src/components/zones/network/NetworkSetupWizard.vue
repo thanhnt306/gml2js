@@ -133,7 +133,7 @@ import AddNetworkFiles from './steps/AddNetworkFiles.vue'
 import ChooseInletNode from './steps/ChooseInletNode.vue'
 import OverviewEditNetwork from './steps/OverviewEditNetwork.vue'
 import type { NetworkGraphData } from '@/services/NetworkGraphService'
-import { toGisRows, toLinkRows, toNodeRows, parseNetworkResponse } from '@/services/NetworkGraphService'
+import { toGisRows, toLinkRows, toNodeRows, parseNetworkResponse, normaliseNodeType } from '@/services/NetworkGraphService'
 import ZoneService from '@/services/ZoneService'
 import NetworkService from '@/services/NetworkService'
 import { useNetworkStore } from '@/stores/network'
@@ -358,7 +358,7 @@ const startAutoConnectPolling = (taskId: string) => {
         elev_m: n.elevation,
         x: n.longitude,
         y: n.latitude,
-        node_type: n.node_type || 'junction',
+        node_type: normaliseNodeType(n.node_type),
         status: 'Unknown',
         dma_id: n.dma_id || Number(props.zoneId) || 0,
         valve_type: n.valve_type || '',
