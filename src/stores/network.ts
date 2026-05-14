@@ -109,6 +109,18 @@ export const useNetworkStore = defineStore('network', () => {
     return resp.data.taskId as string
   }
 
+  /**
+   * Starts a Reconstruct task on the backend.
+   */
+  async function startReconstruct(zoneId: number, reduceJunctions: number, pipeResolution: number, inletLabels: string[]) {
+    const resp = await api.post(`/geometry/zones/${zoneId}/network/reconstruct`, {
+      reduce_junctions: reduceJunctions,
+      pipe_resolution: pipeResolution,
+      inlet_labels: inletLabels
+    })
+    return resp.data.taskId as string
+  }
+
   // Stop heartbeat on page unload (tab close / refresh).
   if (typeof window !== 'undefined') {
     window.addEventListener('beforeunload', _stopHeartbeat)
@@ -125,5 +137,6 @@ export const useNetworkStore = defineStore('network', () => {
     startAutoConnect,
     checkAutoConnectStatus,
     startReCheckConnected,
+    startReconstruct,
   }
 })

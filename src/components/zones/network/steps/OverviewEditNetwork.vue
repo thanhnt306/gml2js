@@ -84,6 +84,13 @@
 
   <!-- Auto-connect Options Dialog -->
   <AutoConnectDialog v-model="showAutoConnect" @confirm="onAutoConnectConfirm" />
+
+  <!-- Reconstruct Options Dialog -->
+  <RebuildNetworkOptionDialog
+    :is-open="showReconstruct"
+    @close="showReconstruct = false"
+    @confirm="onReconstructConfirm"
+  />
 </template>
 
 <script setup lang="ts">
@@ -93,6 +100,7 @@ import LinkDataTable from '../tables/LinkDataTable.vue'
 import NodeDataTable from '../tables/NodeDataTable.vue'
 import ExportGISTable from '../tables/ExportGISTable.vue'
 import AutoConnectDialog from '../dialogs/AutoConnectDialog.vue'
+import RebuildNetworkOptionDialog from './RebuildNetworkOptionDialog.vue'
 import type { GisRow, LinkRow, NodeRow, AttributeGroup } from '../tables/types'
 
 const props = defineProps<{
@@ -166,6 +174,7 @@ const filterValue = ref('')
 const quickFixOpen = ref(false)
 const reportOpen = ref(false)
 const showAutoConnect = ref(false)
+const showReconstruct = ref(false)
 
 const quickFixOptions = ['Auto-connect', 'Reconstruct', 'Custom curves', 'Re-check connected', 'Find Loop']
 
@@ -201,11 +210,20 @@ const onQuickFix = (action: string) => {
     showAutoConnect.value = true
     return
   }
+  if (action === 'Reconstruct') {
+    showReconstruct.value = true
+    return
+  }
   emit('quick-fix', action)
 }
 
 const onAutoConnectConfirm = (params: { distance: number; diameter: number }) => {
   emit('quick-fix', `Auto-connect:${params.distance}:${params.diameter}`)
+}
+
+const onReconstructConfirm = (payload: { reduceJunctions: number; pipeResolution: number }) => {
+  showReconstruct.value = false
+  emit('quick-fix', `Reconstruct:${payload.reduceJunctions}:${payload.pipeResolution}`)
 }
 
 const onReport = (_format: string) => {

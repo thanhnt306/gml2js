@@ -322,7 +322,87 @@ const handleQuickFix = async (action: string) => {
         alert('Failed to start re-check connected task.')
       }
     }
+  } else if (action.startsWith('Reconstruct')) {
+    const parts = action.split(':')
+    const reduceJunctions = parseInt(parts[1]) || 0
+    const pipeResolution = parseInt(parts[2]) || 3 // Default fine
+
+    if (props.zoneId) {
+      try {
+        const zoneIdNum = Number(props.zoneId)
+        const zone = zoneStore.zones.find(z => z.id === zoneIdNum)
+        const inletLabels = zone?.inletLabels || []
+        const taskId = await networkStore.startReconstruct(zoneIdNum, reduceJunctions, pipeResolution, inletLabels)
+        startReconstructPolling(taskId)
+      } catch (err) {
+        alert('Failed to start reconstruct task.')
+      }
+    }
   }
+}
+
+// Helper: apply network changes (added/removed nodes & pipes) to networkStore
+const applyNetworkChanges = (network: any) => {
+  const data = networkStore.networkData
+  if (!data) return
+
+  // Remove pipes
+  const removedPipesSet = new Set(network.removed_pipes || [])
+  data.pipes = data.pipes.filter(p => !removedPipesSet.has(p.label))
+
+  // Remove nodes (rebuild phase can remove junctions)
+  const removedNodesSet = new Set(network.removed_nodes || [])
+  if (removedNodesSet.size > 0) {
+    data.nodes = data.nodes.filter(n => !removedNodesSet.has(n.label))
+  }
+
+  const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
+
+  for (const n of (network.added_nodes || [])) {
+    const newNode = {
+      label: n.label,
+      elev_m: n.elevation,
+      x: n.longitude,
+      y: n.latitude,
+      node_type: normaliseNodeType(n.node_type),
+      status: 'Unknown',
+      dma_id: n.dma_id || Number(props.zoneId) || 0,
+      valve_type: n.valve_type || '',
+      valve_size: n.valve_size || 0,
+      pump_model: n.pump_model || '',
+      raw: {}
+    }
+    data.nodes.push(newNode)
+    nodesMap.set(n.label, newNode)
+  }
+
+  for (const p of (network.added_pipes || [])) {
+    const n1 = nodesMap.get(p.start_node)
+    const n2 = nodesMap.get(p.stop_node)
+    const path: [number, number][] = []
+    if (n1 && n2) {
+      path.push([n1.x, n1.y], [n2.x, n2.y])
+    }
+
+    data.pipes.push({
+      label: p.label,
+      start_node: p.start_node,
+      stop_node: p.stop_node,
+      length_m: p.length,
+      d_mm: p.diameter,
+      material: p.material || 'No Information',
+      status: p.status_string || 'Unknown',
+      dma_id: p.dma_id || Number(props.zoneId) || 0,
+      valve_type: p.valve_type || '',
+      valve_size: p.valve_size || 0,
+      pump_model: p.pump_model || '',
+      path: path,
+      raw: p.extra_attributes || {}
+    })
+  }
+
+  // Force reactivity
+  networkStore.setNetworkData({ ...data }, Number(props.zoneId))
 }
 
 const startAutoConnectPolling = (taskId: string) => {
@@ -334,70 +414,6 @@ const startAutoConnectPolling = (taskId: string) => {
   progressMessage.value = 'Auto-connecting disconnected components...'
 
   if (pollInterval) clearInterval(pollInterval)
-
-  // Helper: apply auto-connect resultData (added/removed nodes & pipes) to networkStore
-  const applyAutoConnectResult = (network: any) => {
-    const data = networkStore.networkData
-    if (!data) return
-
-    // Remove pipes
-    const removedPipesSet = new Set(network.removed_pipes || [])
-    data.pipes = data.pipes.filter(p => !removedPipesSet.has(p.label))
-
-    // Remove nodes (rebuild phase can remove junctions)
-    const removedNodesSet = new Set(network.removed_nodes || [])
-    if (removedNodesSet.size > 0) {
-      data.nodes = data.nodes.filter(n => !removedNodesSet.has(n.label))
-    }
-
-    const nodesMap = new Map(data.nodes.map(n => [n.label, n]))
-
-    for (const n of (network.added_nodes || [])) {
-      const newNode = {
-        label: n.label,
-        elev_m: n.elevation,
-        x: n.longitude,
-        y: n.latitude,
-        node_type: normaliseNodeType(n.node_type),
-        status: 'Unknown',
-        dma_id: n.dma_id || Number(props.zoneId) || 0,
-        valve_type: n.valve_type || '',
-        valve_size: n.valve_size || 0,
-        pump_model: n.pump_model || '',
-        raw: {}
-      }
-      data.nodes.push(newNode)
-      nodesMap.set(n.label, newNode)
-    }
-
-    for (const p of (network.added_pipes || [])) {
-      const n1 = nodesMap.get(p.start_node)
-      const n2 = nodesMap.get(p.stop_node)
-      const path: [number, number][] = []
-      if (n1 && n2) {
-        path.push([n1.x, n1.y], [n2.x, n2.y])
-      }
-
-      data.pipes.push({
-        label: p.label,
-        start_node: p.start_node,
-        stop_node: p.stop_node,
-        length_m: p.length,
-        d_mm: p.diameter,
-        material: p.material || 'No Information',
-        status: p.status_string || 'Unknown',
-        dma_id: p.dma_id || Number(props.zoneId) || 0,
-        valve_type: p.valve_type || '',
-        valve_size: p.valve_size || 0,
-        pump_model: p.pump_model || '',
-        path: path,
-        raw: p.extra_attributes || {}
-      })
-    }
-
-    // Force reactivity
-    networkStore.setNetworkData({ ...data }, Number(props.zoneId))
-  }
 
   let isPolling = false
   let lastEventIndex = -1
@@ -462,11 +478,11 @@ const startAutoConnectPolling = (taskId: string) => {
       for (const event of newEvents) {
         lastEventIndex++
         if (event.message === 'Completed Auto-Connect') {
-          applyAutoConnectResult(event.resultData)
+          applyNetworkChanges(event.resultData)
         } else if (event.message === 'Re-check done, starting rebuild...') {
           applyReCheckResult(event.resultData)
         } else if (event.message === 'Rebuild completed') {
-          applyAutoConnectResult(event.resultData)
+          applyNetworkChanges(event.resultData)
         }
       }
 
@@ -514,6 +530,62 @@ const startAutoConnectPolling = (taskId: string) => {
       pollInterval = null
       console.error('[NetworkSetupWizard] Error polling auto-connect task:', error)
       alert('Error auto-connecting: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      showProgressDialog.value = false
+      isProcessing.value = false
+    } finally {
+      isPolling = false
+    }
+  }, 1000)
+}
+
+const startReconstructPolling = (taskId: string) => {
+  if (!props.zoneId) return
+
+  showProgressDialog.value = true
+  isProcessing.value = true
+  progressPercent.value = 0
+  progressMessage.value = 'Reconstructing network...'
+
+  if (pollInterval) clearInterval(pollInterval)
+
+  let isPolling = false
+  pollInterval = setInterval(async () => {
+    if (isPolling) return
+    isPolling = true
+    try {
+      const status = await networkStore.checkAutoConnectStatus(taskId)
+      progressPercent.value = status.percentage || 0
+      progressMessage.value = status.message || 'Processing...'
+
+      if (status.completed) {
+        if (pollInterval) clearInterval(pollInterval)
+        pollInterval = null
+
+        if (status.hasError) {
+          throw new Error(status.errorDetails || 'Reconstruct task failed')
+        }
+
+        const network = status.resultData
+        const warnings = network?.warnings || []
+
+        if (network) {
+          applyNetworkChanges(network)
+        }
+
+        showProgressDialog.value = false
+        isProcessing.value = false
+
+        if (warnings.length > 0) {
+          alert(`Network reconstruction completed with warnings:\n\n${warnings.join('\n\n')}`)
+        } else {
+          alert('✅ Network reconstruction completed successfully!')
+        }
+      }
+    } catch (error) {
+      if (pollInterval) clearInterval(pollInterval)
+      pollInterval = null
+      console.error('[NetworkSetupWizard] Error polling reconstruct task:', error)
+      alert('Error reconstructing network: ' + (error instanceof Error ? error.message : 'Unknown error'))
       showProgressDialog.value = false
       isProcessing.value = false
     } finally {
